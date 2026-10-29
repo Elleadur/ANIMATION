@@ -25,6 +25,20 @@ QWERTY piano with snap-to-scale, XY pad, 8 assignable macros, 8 quantized scenes
 ## UI and themes
 Transport, blend, roles, style, mixer, macros/XY, sequencer, timeline, FX rack, presets, settings. Three themes: Minimal dark, Visual show (reactive full-screen canvas), Retro 90s rave (knobs, LEDs, tracker view, CRT scanlines).
 
+## Timeline console (section 11)
+A horizontal multi-track DAW-style timeline as the main panel, sharing state with the Arrangement, Mixer, Generator and Scene modules.
+- **Layout:** one lane per track with name/mute/solo/lock/volume, a bar/beat ruler with playhead and draggable loop region, Ctrl+wheel zoom, scrollbar, snap grid (1 bar to 1/16, or Off).
+- **Clips:** generated patterns (drum, bass, chords, melody, arp, fill, riser), color-coded by genre, a clip library to drag from, and "Generate clip here".
+- **Drag and drop (mouse and touch):** move/resize with snapping, Alt+drag or Ctrl+D duplicate, Delete, S to split, merge, rectangle/Shift multi-select, velocity handle, lane reordering, scene markers on the ruler, .mid import and .json preset drop, ghost preview and red invalid-drop outline.
+- **Playback:** click ruler to seek; ARRANGE mode (timeline is the song) vs LIVE mode (engine runs, "Record to timeline"); edits quantized to the next bar; locked lanes/clips never regenerated; draggable energy curve the arrangement follows.
+- **Undo/redo:** Ctrl+Z / Ctrl+Y with small command objects.
+- **Data:** plain JSON in presets and JSON export; MIDI and WAV export render from the timeline in ARRANGE mode.
+- **Themes/performance:** works in all three themes (tracker strip in Retro, glowing analyser-synced clips in Visual Show), dirty-region redraws, no glow on Low quality, `// UPGRADE HOOK:` for automation lanes, audio clips, WebMIDI recording.
+- **Accessibility:** arrows move, Shift+arrows resize, Enter opens clip settings.
+
+## Build stages
+1 engine, scheduler, RNG, theory, drums · 2 instruments, effects, bass/harmony generators · 3 genres and styles as data · 4 blend, roles, arrangement, energy · 5 live features · 6 UI, mixer, themes · 7 timeline console · 8 presets, WAV, MIDI, shortcuts, self-test, quality.
+
 ## Extras
 WAV export, presets (localStorage + JSON import/export + built-in demos), keyboard shortcuts with a `?` help overlay, hand-written Standard MIDI File export (drums on channel 10).
 
