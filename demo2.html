@@ -95,6 +95,7 @@ body[data-theme="retro"] {
    BASE LAYOUT
    ===================================================================== */
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--bg);
@@ -269,6 +270,50 @@ body[data-theme="retro"] .strip .meter i { background: linear-gradient(90deg, #2
 #toast.show { opacity: 1; }
 #toast.err { border-color: #ff4d4d; color: #ffb3b3; }
 
+/* ---------- Timeline console ---------- */
+.tl-toolbar { margin-bottom: 6px; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; }
+.seg button:first-child { border-radius: calc(var(--radius) * 0.6) 0 0 calc(var(--radius) * 0.6); }
+.seg button:last-child { border-radius: 0 calc(var(--radius) * 0.6) calc(var(--radius) * 0.6) 0; border-left: 0; }
+button.queued { animation: blink 0.4s steps(2) infinite; }
+button:disabled { opacity: 0.45; cursor: default; }
+.tl-wrap { display: flex; border: 1px solid var(--panel-border); border-radius: var(--radius); overflow: hidden; background: var(--bg); }
+#tlHeaders { flex: 0 0 150px; border-right: 1px solid var(--panel-border); background: var(--panel); }
+.tlh-top { display: flex; flex-direction: column; justify-content: space-around; font-size: 10px; color: var(--muted); padding: 2px 6px; border-bottom: 1px solid var(--panel-border); }
+.tlh-sec { font-size: 10px; color: var(--muted); padding: 0 6px; display: flex; align-items: center; border-bottom: 1px solid var(--panel-border); }
+.tlh-lane { display: flex; flex-wrap: wrap; align-items: center; gap: 1px 4px; padding: 2px 4px; border-bottom: 1px solid var(--panel-border); font-size: 11px; overflow: hidden; position: relative; background: var(--panel); }
+.tlh-lane .grip { cursor: grab; padding: 0 3px; color: var(--muted); user-select: none; }
+.tlh-lane .nm { font-weight: bold; flex: 1 1 40px; overflow: hidden; white-space: nowrap; }
+.tlh-lane button.mini { padding: 0 4px; font-size: 10px; line-height: 15px; }
+.tlh-lane input[type="range"] { width: 100%; height: 12px; margin: 0; }
+.tlh-lane.compact input[type="range"] { display: none; }
+.tlh-lane.dragging { opacity: 0.85; z-index: 5; box-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+#tlCanvasWrap { position: relative; flex: 1 1 auto; min-width: 0; }
+#tlCanvas, #tlOverlay { position: absolute; left: 0; top: 0; width: 100%; display: block; }
+#tlOverlay { touch-action: none; outline: none; }
+#tlOverlay:focus-visible { box-shadow: inset 0 0 0 2px var(--accent2); }
+#tlGenHere { position: absolute; z-index: 3; font-size: 11px; padding: 2px 8px; background: var(--accent); color: #000; }
+#tlScroll { width: 100%; margin-top: 4px; }
+#clipLibrary { display: flex; flex-wrap: wrap; gap: 4px; max-height: 128px; overflow: auto; }
+.lib-item { padding: 3px 8px; border-radius: 4px; border: 1px solid var(--panel-border); background: var(--cell); cursor: grab; font-size: 11px; user-select: none; display: inline-flex; gap: 5px; align-items: center; }
+.lib-item i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.lib-item.sec { text-transform: uppercase; font-weight: bold; letter-spacing: 0.04em; }
+.tl-ghost { position: fixed; z-index: 200; pointer-events: none; padding: 3px 8px; background: var(--accent); color: #000; border-radius: 4px; font-size: 11px; opacity: 0.92; white-space: nowrap; }
+#pTimeline.tl-drop-hover { outline: 2px dashed var(--accent2); outline-offset: 2px; }
+body[data-theme="visual"] .tl-wrap { background: rgba(0,0,0,0.35); }
+body[data-theme="visual"] #tlHeaders, body[data-theme="visual"] .tlh-lane { background: rgba(12,14,24,0.6); }
+body[data-theme="retro"] .tl-wrap { background: #050508; border-color: #44415a; }
+body[data-theme="retro"] .tlh-lane { background: #15141c; text-transform: uppercase; }
+body[data-theme="retro"] .lib-item { border-color: var(--accent); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.5); }
+#scenes button { touch-action: none; }
+.modal { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
+.modal[hidden] { display: none; }
+.modal .box { background: var(--panel); border: 1px solid var(--panel-border); border-radius: var(--radius); padding: 16px 20px; max-width: 620px; width: calc(100% - 32px); }
+#seqEditBanner { background: var(--accent); color: #000; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; display: flex; gap: 10px; align-items: center; }
+#seqEditBanner[hidden] { display: none; }
+#seqEditBanner button { background: rgba(0,0,0,0.15); color: #000; border-color: rgba(0,0,0,0.3); }
+
 @media (max-width: 760px) {
   #macros { grid-template-columns: repeat(2, 1fr); }
   #scope { display: none; }
@@ -321,6 +366,46 @@ body[data-theme="retro"] .strip .meter i { background: linear-gradient(90deg, #2
 </header>
 
 <main id="grid">
+  <!-- ===================== TIMELINE CONSOLE (main panel) ===================== -->
+  <section class="panel wide" id="pTimeline" aria-labelledby="hTimeline">
+    <h2 id="hTimeline">Timeline console</h2>
+    <div class="row tl-toolbar">
+      <span class="seg" role="group" aria-label="Timeline mode">
+        <button id="tlModeLive" aria-pressed="true" title="LIVE: the generative engine plays freely">LIVE</button><button id="tlModeArrange" aria-pressed="false" title="ARRANGE: the timeline is the song">ARRANGE</button>
+      </span>
+      <button id="tlRec" title="LIVE mode: write what plays onto the timeline">&#9679; Record to timeline</button>
+      <button id="tlBuild" title="Fill the timeline from the generated arrangement">Build from arrangement</button>
+      <label>Snap <select id="tlSnap"><option value="1">1 bar</option><option value="0.5">1/2</option><option value="0.25">1/4</option><option value="0.125">1/8</option><option value="0.0625">1/16</option><option value="0">Off</option></select></label>
+      <button id="tlZoomOut" title="Zoom out (Ctrl+wheel)" aria-label="Zoom out">&minus;</button><button id="tlZoomIn" title="Zoom in (Ctrl+wheel)" aria-label="Zoom in">+</button>
+      <label title="Loop region (L key when the timeline is focused)"><input type="checkbox" id="tlLoop"> Loop</label>
+      <label title="Energy follows the curve above the lanes"><input type="checkbox" id="tlCurve"> Fit to energy curve</label>
+    </div>
+    <div class="row tl-toolbar">
+      <button id="tlUndo" title="Undo (Ctrl+Z)">&#8630; Undo</button><button id="tlRedo" title="Redo (Ctrl+Y)">&#8631; Redo</button>
+      <button id="tlDup" title="Duplicate selected clips (Ctrl+D or Alt+drag)">Duplicate</button>
+      <button id="tlSplit" title="Split at the playhead (S)">Split</button>
+      <button id="tlMerge" title="Merge adjacent clips of the same pattern (J)">Merge</button>
+      <button id="tlDelete" title="Delete selection (Delete)">Delete</button>
+      <button id="tlSettings" title="Clip settings (Enter or double-click)">Clip settings</button>
+      <button id="tlRegen" title="Regenerate selected (or all unlocked) clips">Regenerate clips</button>
+      <button id="tlRenderWav" title="Play the timeline once and save it as .wav">Render WAV</button>
+      <button id="tlClear" title="Remove all unlocked clips">Clear</button>
+    </div>
+    <div class="tl-wrap">
+      <div id="tlHeaders"></div>
+      <div id="tlCanvasWrap">
+        <canvas id="tlCanvas" aria-hidden="true"></canvas>
+        <canvas id="tlOverlay" tabindex="0" role="application" aria-label="Timeline. Click to select or move clips. Arrow keys move clips, Shift+arrows resize, Enter opens clip settings, Delete removes, S splits, J merges, G generates a clip, comma and period select clips, L loop, [ and ] loop points, E adds an energy point, 1 to 8 add scene markers."></canvas>
+        <button id="tlGenHere" hidden>+ Generate clip here</button>
+      </div>
+    </div>
+    <input type="range" id="tlScroll" min="0" max="64" step="0.25" value="0" aria-label="Scroll the timeline">
+    <h3>Clip library <span style="text-transform:none">(drag onto a lane, or focus an item and press Enter)</span></h3>
+    <div id="clipLibrary"></div>
+    <p class="hint">Drag clips to move, edges to resize, top strip to change intensity, Alt+drag to duplicate, drag on empty space to select.
+      Click the ruler to move the playhead. Drag scene buttons onto the ruler. Drop a .mid file here to import it, or a .json preset anywhere.</p>
+  </section>
+
   <!-- ===================== GENRE BLEND ===================== -->
   <section class="panel" id="pGenre" aria-labelledby="hGenre">
     <h2 id="hGenre">Genre Blend</h2>
@@ -386,6 +471,7 @@ body[data-theme="retro"] .strip .meter i { background: linear-gradient(90deg, #2
   <!-- ===================== SEQUENCER / PIANO ROLL ===================== -->
   <section class="panel wide" id="pSeq" aria-labelledby="hSeq">
     <h2 id="hSeq">Sequencer / Piano roll</h2>
+    <div id="seqEditBanner" hidden><span id="seqEditText"></span><button id="btnSeqBack">Back to live patterns</button></div>
     <div id="trackTabs" role="tablist"></div>
     <div class="row" style="margin-bottom:6px">
       <label>Steps <select id="patLen"><option value="1">1 bar</option><option value="2" selected>2 bars</option></select></label>
@@ -474,10 +560,32 @@ body[data-theme="retro"] .strip .meter i { background: linear-gradient(90deg, #2
       <tr><td>Piano mode</td><td>Z S X D C V G B H N J M / Q 2 W 3 E R 5 T 6 Y 7 U I play notes, <kbd>-</kbd> <kbd>=</kbd> octave</td></tr>
       <tr><td><kbd>?</kbd></td><td>Show / hide this help</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Close help, leave piano mode</td></tr>
+      <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Undo / redo timeline actions</td></tr>
+      <tr><td>Timeline focused</td><td>Arrows move clips (or the playhead), <kbd>Shift</kbd>+arrows resize, <kbd>Enter</kbd> clip settings, <kbd>Delete</kbd>,
+        <kbd>Ctrl</kbd>+<kbd>D</kbd> duplicate, <kbd>S</kbd> split, <kbd>J</kbd> merge, <kbd>G</kbd> generate, <kbd>,</kbd> <kbd>.</kbd> select clips,
+        <kbd>L</kbd> loop, <kbd>[</kbd> <kbd>]</kbd> loop points, <kbd>E</kbd> energy point, <kbd>1</kbd>-<kbd>8</kbd> scene marker</td></tr>
+      <tr><td>Lane header focused</td><td><kbd>Alt</kbd>+<kbd>&uarr;</kbd>/<kbd>&darr;</kbd> moves the lane</td></tr>
+      <tr><td>Timeline mouse</td><td>Ctrl+wheel zoom, Ctrl+Shift+wheel lane height, Shift+wheel scroll</td></tr>
       <tr><td>Grid focused</td><td>Arrow keys move the cursor, <kbd>Enter</kbd> toggles a step</td></tr>
     </table>
     <p class="hint">Shortcuts are ignored while you type in a text or number box.</p>
     <button id="btnCloseHelp">Close</button>
+  </div>
+</div>
+<!-- ===================== CLIP SETTINGS DIALOG ===================== -->
+<div id="clipDialog" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="hClip">
+  <div class="box">
+    <h2 id="hClip">Clip settings</h2>
+    <p id="clipInfo" class="hint"></p>
+    <div class="row"><label id="clipNameWrap">Name <input type="text" id="clipName" style="width:240px"></label>
+      <label id="clipTypeWrap" hidden>Section <select id="clipType"></select></label></div>
+    <div class="row"><label>Start bar <input type="number" id="clipStart" min="1" step="0.25"></label>
+      <label>Length (bars) <input type="number" id="clipLen" min="0.0625" step="0.25"></label></div>
+    <div class="row"><label>Intensity <input type="range" id="clipGain" min="10" max="150"><output id="clipGainOut"></output></label>
+      <label><input type="checkbox" id="clipLock"> Lock (never regenerate)</label></div>
+    <div class="row" style="margin-top:10px"><button id="clipApply">Apply</button><button id="clipRegen">Regenerate pattern</button>
+      <button id="clipUnique">Make unique</button><button id="clipEdit">Edit pattern in sequencer</button>
+      <button id="clipDel">Delete</button><button id="clipClose">Close</button></div>
   </div>
 </div>
 <div id="toast" role="status"></div>
@@ -979,6 +1087,32 @@ const MELODY_DEGREES = {
   sparse: [0, 2, 4, 7, -3, 1]
 };
 
+/* ---------- Timeline console data (section 11) ---------- */
+/** Timeline lanes: which mixer tracks each lane drives and which clip kinds it accepts. */
+const TL_LANES = [
+  { id: "drums",  name: "Drums",   tracks: DRUM_LANES, kinds: ["drum", "fill"],  newKind: "drum",  role: "drums" },
+  { id: "bass",   name: "Bass",    tracks: ["bass"],   kinds: ["bass"],          newKind: "bass",  role: "bass" },
+  { id: "chords", name: "Harmony", tracks: ["chords"], kinds: ["chord"],         newKind: "chord", role: "harmony" },
+  { id: "lead",   name: "Lead",    tracks: ["lead"],   kinds: ["lead", "arp"],   newKind: "lead",  role: "lead" },
+  { id: "arp",    name: "Arp",     tracks: ["arp"],    kinds: ["arp", "lead"],   newKind: "arp",   role: "lead" },
+  { id: "fx",     name: "FX",      tracks: [],         kinds: ["riser", "revcym", "impact"], newKind: "riser", role: "drums" }
+];
+/** The thin sections lane above the instrument lanes. */
+const TL_SEC_LANE = { id: "sec", name: "Sections", kinds: ["section"] };
+/** Pixel sizes of the timeline rows. */
+const TL_GEOMETRY = { ruler: 26, curve: 46, sec: 18 };
+/** Zoom limits: [min, max, default] pixels per bar (x) and per lane (y). */
+const TL_ZOOM = { x: [12, 240, 48], y: [26, 120, 46] };
+/** Items always shown in the clip library. */
+const TL_LIBRARY_SECTIONS = ["intro", "groove", "build", "drop", "breakdown", "outro", "fill", "riser"];
+/** Default clip lengths in bars. */
+const TL_DEFAULT_BARS = { clip: 4, section: 8, fill: 1, riser: 4, revcym: 1, impact: 1 };
+const TL_UNDO_LIMIT = 200;
+const TL_LIBRARY_MAX = 60;
+const TL_KIND_LABELS = { drum: "Drums", fill: "Fill", bass: "Bass", chord: "Chords", lead: "Melody", arp: "Arp", riser: "Riser", revcym: "Rev cymbal", impact: "Impact", section: "Section" };
+/** General MIDI drum notes -> drum lanes (for .mid import). */
+const TL_GM_DRUM_MAP = { 35: "kick", 36: "kick", 38: "snare", 40: "snare", 37: "perc", 39: "clap", 42: "hat", 44: "hat", 46: "ohat", 49: "ohat", 57: "ohat", 51: "perc", 53: "perc", 59: "perc", 41: "perc", 43: "perc", 45: "perc", 47: "perc", 48: "perc", 50: "perc", 56: "perc", 70: "perc" };
+
 /* =======================================================================
    B. SEEDED RANDOM NUMBERS
    Same seed = same numbers = same song.
@@ -1107,7 +1241,8 @@ function defaultState() {
     patternBars: DEFAULTS.patternBars, patterns: {}, tracks,
     fx: { delayDivision: DEFAULTS.delayDivision, lfoRate: 0.1, lfoDepth: 0, phaserRate: 0.25 },
     autoArrange: true, variation: 0, mutation: 0,
-    kbInstrument: "auto", snap: true
+    kbInstrument: "auto", snap: true,
+    timeline: defaultTimeline()   // section 11: timeline console data (plain JSON)
   };
 }
 /** Settings are separate from presets (theme, quality...). */
@@ -1616,7 +1751,8 @@ const Mixer = {
   /** Build one channel strip per track (called once after audio starts). */
   buildChannels() {
     const ctx = rt.ctx, n = rt.nodes;
-    TRACKS.forEach((t) => {
+    // the extra "fx" channel plays the timeline's FX lane (risers, reverse cymbals, impacts)
+    TRACKS.concat([{ id: "fx" }]).forEach((t) => {
       const ch = {};
       ch.input = ctx.createGain();
       ch.drive = FX.makeDistortion(ctx);
@@ -1640,7 +1776,10 @@ const Mixer = {
   /** Push all mixer settings (volume, pan, mute/solo, sends) to the audio graph. */
   apply() {
     if (!rt.ctx) return;
-    const anySolo = TRACKS.some((t) => state.tracks[t.id].solo);
+    const fxl = state.timeline.fx;
+    const anySolo = TRACKS.some((t) => state.tracks[t.id].solo) || fxl.solo;
+    const fch = rt.channels.fx;
+    if (fch) { smooth(fch.vol.gain, fxl.vol * fxl.vol * 1.4); smooth(fch.mute.gain, (anySolo ? fxl.solo : !fxl.mute) ? 1 : 0, 0.02); smooth(fch.rev.gain, 0.25); smooth(fch.dly.gain, 0.05); }
     TRACKS.forEach((t) => {
       const s = state.tracks[t.id], ch = rt.channels[t.id];
       if (!ch) return;
@@ -2085,6 +2224,8 @@ const scaleInterval = (local, d) => local[mod(d, local.length)] + 12 * Math.floo
 function notesForStep(trackId, step, chord) {
   const song = rt.song, kind = TRACKS.find((x) => x.id === trackId).kind;
   if (!step || !song) return [];
+  if (step.m !== undefined) return [{ midi: step.m, vel: step.v }];                 // imported MIDI note
+  if (step.ms) return step.ms.map((m) => ({ midi: m, vel: step.v * 0.8 }));          // imported MIDI chord
   const prof = song.profiles;
   if (kind === "bass") {
     let base = 12 * (prof.bass.bassOctave + 1) + chord.rootPc; if (chord.rootPc > 7) base -= 12;
@@ -2127,11 +2268,20 @@ function applyTrackInserts() {
    H. ARRANGEMENT + ENERGY
    ======================================================================= */
 const Arr = {
-  current() { return rt.arr[rt.secIdx] || { type: "groove", bars: 8 }; },
+  current() {
+    if (state.timeline.mode === "arrange") return tlRt.section || { type: "groove", bars: 0 };
+    return rt.arr[rt.secIdx] || { type: "groove", bars: 8 };
+  },
   type() { return SECTION_TYPES[this.current().type] || SECTION_TYPES.groove; },
   /** Effective energy = user energy + section offset (+ build ramp). */
   energy() {
     const sec = this.current(), st = this.type();
+    const curve = state.timeline.energyCurve;
+    if (curve.on && curve.points.length) {
+      // "Fit to energy curve": the drawn curve decides the energy
+      const spb = stepsPerBar(), pos = state.timeline.mode === "arrange" ? tlRt.bar + rt.stepInBar / spb : (rt.songBar % Timeline.end()) + rt.stepInBar / spb;
+      return clamp(Timeline.curveValue(pos), 0, 100);
+    }
     let e = state.params.energy + st.energy + (st.ramp ? st.ramp * (rt.secBar / Math.max(1, sec.bars)) : 0);
     if (st.trade && Math.floor(rt.secBar / 4) % 2 === 1) e += 15;
     return clamp(e, 0, 100);
@@ -2170,6 +2320,7 @@ function startTransport() {
   applyParams();
   setMasterVolume();
   clearInterval(rt.timer);
+  Timeline.onStart();
   rt.timer = setInterval(schedulerTick, DEFAULTS.schedulerMs);
   state.playing = true;
   UI.updateTransport();
@@ -2189,6 +2340,7 @@ function stopTransport() {
   }
   Object.keys(rt.liveVoices).forEach((k) => delete rt.liveVoices[k]);
   rt.uiQueue.length = 0;
+  Timeline.onStop();
   UI.updateTransport();
 }
 /** Master volume (squared for a natural feel). Smoothly ramped = no clicks. */
@@ -2228,6 +2380,8 @@ function hitThreshold(energy) { return clamp(0.75 - energy / 100 * 0.8 - (state.
 
 /** Schedule everything for one 16th step at audio time "time". */
 function scheduleStep(time) {
+  if (rt.stepInBar === 0) Timeline.applyPendingMode();
+  if (state.timeline.mode === "arrange") { scheduleTimelineStep(time); return; }
   const spb = stepsPerBar(), L = patternLength(), sd = stepDuration();
   if (rt.stepInBar === 0) onBarStart(time);
   const song = rt.song;
@@ -2323,6 +2477,7 @@ function onBarStart(time) {
     if (!Arr.type().roll && R.chance(rngFor("autofill", rt.songBar), 0.6)) makeFill(rt.songBar);
   } else if (rt.secBar > 0 && rt.secBar % 8 === 7 && R.chance(rngFor("autofill", rt.songBar), 0.35)) makeFill(rt.songBar);
   rt.barStart = time;
+  if (tlRt.rec) Timeline.recordBar(sectionStart);
   UI.queue("section");
 }
 
@@ -2499,6 +2654,18 @@ function loadState(obj, opts = {}) {
   next.tracks = {}; TRACKS.forEach((t) => (next.tracks[t.id] = Object.assign(dt[t.id], (incoming.tracks || {})[t.id] || {})));
   next.fx = Object.assign(defaultState().fx, incoming.fx || {});
   if (!Array.isArray(next.macros) || next.macros.length !== 8) next.macros = DEFAULT_MACROS.slice();
+  // timeline: scenes keep the current timeline, presets bring their own
+  if (opts.keepTimeline) next.timeline = state.timeline;
+  else {
+    const it = incoming.timeline || {}, dtl = defaultTimeline();
+    next.timeline = Object.assign(dtl, deepCopy(it));
+    next.timeline.loop = Object.assign(defaultTimeline().loop, it.loop || {});
+    next.timeline.energyCurve = Object.assign(defaultTimeline().energyCurve, it.energyCurve || {});
+    next.timeline.fx = Object.assign(defaultTimeline().fx, it.fx || {});
+    const known = TL_LANES.map((l) => l.id);
+    if (!Array.isArray(next.timeline.lanes) || next.timeline.lanes.length !== known.length || !known.every((id) => next.timeline.lanes.includes(id))) next.timeline.lanes = known.slice();
+    History.clear(); tlRt.sel.clear(); tlRt.liveHash.clear();
+  }
   // Tempo lock: keep the current tempo if the user locked it
   if (state.tempoLock && !opts.ignoreLock) { next.bpm = state.bpm; next.tempoLock = true; }
   const seedChanged = next.seed !== state.seed;
@@ -2511,12 +2678,13 @@ function loadState(obj, opts = {}) {
   if (!state.tempoLock && !hasPatterns && !opts.keepBpm) state.bpm = rt.song.bpmTarget;
   Mixer.apply(); applyParams(); setMasterVolume(false);
   UI.refreshAll();
+  if (!opts.keepTimeline) Timeline.refresh();
 }
 
 /** 8 scene slots (stored with presets). Recalled on the next bar while playing. */
 const Scenes = {
   slots: new Array(8).fill(null),
-  save(i) { this.slots[i] = snapshot(); UI.updateScenes(); toast("Scene " + (i + 1) + " saved"); },
+  save(i) { const s = snapshot(); delete s.timeline; this.slots[i] = s; UI.updateScenes(); toast("Scene " + (i + 1) + " saved"); },
   trigger(i, forceSave) {
     if (forceSave || !this.slots[i]) { this.save(i); return; }
     if (state.playing) { rt.queuedScene = i; UI.updateScenes(); toast("Scene " + (i + 1) + " on the next bar"); }
@@ -2524,7 +2692,7 @@ const Scenes = {
   },
   apply(i) {
     if (!this.slots[i]) return;
-    loadState(this.slots[i], { keepBpm: true });
+    loadState(this.slots[i], { keepBpm: true, keepTimeline: true });
     UI.updateScenes();
   }
 };
@@ -2686,6 +2854,7 @@ const MidiFile = {
    * note logic as the live player (notesForStep + section layers).
    */
   build(bars) {
+    if (state.timeline.mode === "arrange" && state.timeline.clips.some((c) => c.lane !== "sec")) return this.buildTimeline();
     if (!rt.song) resolveSong();
     const PPQ = 480, TPS = PPQ / 4, spb = stepsPerBar(), L = patternLength();
     const tracks = {}; TRACKS.forEach((t) => (tracks[t.id] = []));
@@ -2721,6 +2890,11 @@ const MidiFile = {
       secBar++;
       if (secBar >= sec.bars) { secBar = 0; secIdx = (secIdx + 1) % arr.length; }
     }
+    return this.assemble(tracks);
+  },
+  /** Turn per-track event lists into the final .mid bytes (conductor track + one track per instrument). */
+  assemble(tracks) {
+    const PPQ = 480;
     // conductor track: tempo + time signature
     const ts = TIME_SIGNATURES[state.timeSig] || TIME_SIGNATURES["4/4"];
     const mpq = Math.round(60000000 / state.bpm);
@@ -2744,8 +2918,10 @@ const MidiFile = {
   },
   export(bars) {
     try {
+      const arrange = state.timeline.mode === "arrange";
       const bytes = this.build(clamp(Math.round(bars) || 64, 1, 512));
-      downloadBlob(new Blob([bytes], { type: "audio/midi" }), "procedural-demo2-" + state.seed + ".mid");
+      downloadBlob(new Blob([bytes], { type: "audio/midi" }), "procedural-demo2-" + state.seed + (arrange ? "-timeline" : "") + ".mid");
+      if (arrange) toast("MIDI exported from the timeline (ARRANGE mode)");
     } catch (e) { toast("MIDI export failed: " + e.message, true); log("MIDI export failed: " + e.message, "error"); }
   }
 };
@@ -2836,6 +3012,14 @@ async function selfTest() {
     check("MIDI writer", midi[0] === 0x4d && midi[1] === 0x54 && midi[2] === 0x68 && midi[3] === 0x64, midi.length + " bytes");
     const wav = encodeWav(new Float32Array(100), new Float32Array(100), 44100);
     check("WAV writer", wav.size === 44 + 400, wav.size + " bytes");
+    // Timeline: generate a clip, read its events, undo it again
+    const undoBefore = History.undo.length, clipsBefore = state.timeline.clips.length;
+    const pid = Timeline.generatePattern("drum", { bars: 1, energy: 100, tag: "selftest" });
+    tlAction("Self-test clip", (t) => t.clips.push({ id: Timeline.newId(), lane: "drums", start: 9999, length: 1, offset: 0, patternId: pid, gain: 1, lock: false }));
+    const evs = Timeline.eventsAt(9999 * stepsPerBar(), null);
+    const savedRedo = History.redo.slice();
+    History.doUndo(); History.redo = savedRedo; delete state.timeline.library[pid]; Timeline.changed();
+    check("Timeline clips, events and undo", evs.drums.length > 0 && state.timeline.clips.length === clipsBefore && History.undo.length === undoBefore, evs.drums.length + " drum hits in the test clip");
     // Play a test pattern straight into the channels
     const vol = Math.max(0.35, Math.pow(state.masterVolume / 100, 2));
     if (vol > Math.pow(state.masterVolume / 100, 2)) log("(master volume is very low - the test uses a minimum level)");
@@ -2862,6 +3046,1385 @@ async function selfTest() {
   log(ok ? "SELF-TEST PASSED: audio works. Press Play!" : "SELF-TEST had failures (see above).", ok ? "info" : "error");
   toast(ok ? "Self-test passed" : "Self-test had failures - see Settings log", !ok);
 }
+
+/* =======================================================================
+   M. TIMELINE CONSOLE  (drag & drop arrangement)
+   -----------------------------------------------------------------------
+   All timeline data lives in state.timeline (plain JSON, saved in presets):
+     mode        : "live" (generative engine) or "arrange" (timeline = song)
+     lanes       : lane order (ids from TL_LANES). Lanes drive the SAME mixer
+                   tracks (mute/solo/lock/volume are state.tracks values).
+     clips       : { id, lane, start, length, offset, patternId, gain, lock, type }
+                   start/length/offset are in bars. "sec" lane clips carry a
+                   section type (intro, drop...) instead of a pattern.
+     library     : { patternId: { id, kind, bars, data, genre, label, energy, section } }
+                   data has the same format as state.patterns (generator output).
+     loop, energyCurve {on, points:[{bar, v}]}, markers [{bar, scene}], fx lane props
+   The scheduler reads a per-bar "plan" built from this data, never the DOM.
+   Edits therefore always take effect on the next bar (no glitches).
+   ======================================================================= */
+
+/** A fresh, empty timeline. */
+function defaultTimeline() {
+  return {
+    mode: "live", lanes: TL_LANES.map((l) => l.id), clips: [], library: {}, nextId: 1,
+    loop: { on: false, start: 0, end: 8 }, energyCurve: { on: false, points: [] }, markers: [],
+    fx: { vol: 0.8, mute: false, solo: false, lock: false },
+    snap: "1", zoomX: TL_ZOOM.x[2], zoomY: TL_ZOOM.y[2]
+  };
+}
+const TL = () => state.timeline;
+const r6 = (x) => Math.round(x * 1e6) / 1e6;
+
+/** Runtime-only timeline values (selection, drag, playhead...). */
+const tlRt = {
+  sel: new Set(), scroll: 0, cursor: 0, playPos: null, plan: {}, bar: 0, nextBar: 0, jump: -1,
+  rec: null, render: null, section: null, drag: null, ext: null, flash: null, genHere: null,
+  focusLane: 0, selPoint: -1, selMarker: -1, liveHash: new Map(), level: 0, pendingMode: null, libCount: -1
+};
+
+/* ---------- UNDO / REDO: small command objects {label, before, after} ---------- */
+const History = {
+  undo: [], redo: [],
+  /** The undoable part of the timeline (patterns are only ever added, so they are left out). */
+  light() { const t = TL(); return deepCopy({ clips: t.clips, lanes: t.lanes, loop: t.loop, energyCurve: t.energyCurve, markers: t.markers }); },
+  commit(label, before) {
+    const after = this.light();
+    if (JSON.stringify(before) === JSON.stringify(after)) return;
+    this.undo.push({ label, before, after });
+    if (this.undo.length > TL_UNDO_LIMIT) this.undo.shift();
+    this.redo.length = 0;
+    Timeline.changed();
+  },
+  restore(snap) { Object.assign(state.timeline, deepCopy(snap)); Timeline.changed(true); },
+  doUndo() { const c = this.undo.pop(); if (!c) { toast("Nothing to undo"); return; } this.restore(c.before); this.redo.push(c); toast("Undo: " + c.label); },
+  doRedo() { const c = this.redo.pop(); if (!c) { toast("Nothing to redo"); return; } this.restore(c.after); this.undo.push(c); toast("Redo: " + c.label); },
+  clear() { this.undo.length = 0; this.redo.length = 0; }
+};
+/** Run a timeline change as one undoable action. */
+function tlAction(label, fn) { const before = History.light(); fn(state.timeline); History.commit(label, before); }
+
+const Timeline = {
+  ready: false, dirty: true, odirty: true, dpr: 1, colors: {},
+
+  /* ================= basic helpers ================= */
+  laneDef(id) { return id === "sec" ? TL_SEC_LANE : TL_LANES.find((l) => l.id === id); },
+  lib(id) { return TL().library[id]; },
+  clipById(id) { return TL().clips.find((c) => c.id === id); },
+  end() { let e = 0; TL().clips.forEach((c) => (e = Math.max(e, c.start + c.length))); return Math.max(1, Math.ceil(e - 1e-6)); },
+  totalBars() { return Math.max(64, this.end() + 16, TL().loop.end + 8); },
+  snapUnit() { return parseFloat(TL().snap) || 0; },
+  minLen() { return this.snapUnit() || 1 / stepsPerBar(); },
+  snap(bar) { const u = this.snapUnit() || 1 / stepsPerBar(); return r6(Math.round(bar / u) * u); },
+  snapDown(bar) { const u = this.snapUnit() || 1 / stepsPerBar(); return r6(Math.floor(bar / u + 1e-6) * u); },
+  clipKind(c) { return c.lane === "sec" ? "section" : (this.lib(c.patternId) || {}).kind; },
+  compatible(kind, laneId) { const l = this.laneDef(laneId); return !!l && !!kind && l.kinds.includes(kind); },
+  overlaps(laneId, start, end, exclude) {
+    return TL().clips.some((c) => c.lane === laneId && !(exclude && exclude.has(c.id)) && c.start < end - 1e-6 && c.start + c.length > start + 1e-6);
+  },
+  newId(prefix = "c") { return prefix + TL().nextId++; },
+  patLen(p) { if (!p || !p.data) return 0; return p.kind === "drum" || p.kind === "fill" ? (p.data.kick || []).length : p.data.length; },
+  laneLocked(laneId) {
+    if (laneId === "fx") return !!TL().fx.lock;
+    const l = this.laneDef(laneId); if (!l || !l.tracks || !l.tracks.length) return false;
+    return l.tracks.every((t) => state.tracks[t].lock);
+  },
+  playhead() { return tlRt.playPos != null ? tlRt.playPos : tlRt.cursor; },
+  /** Energy curve value at a bar (linear between points). */
+  curveValue(bar) {
+    const pts = TL().energyCurve.points;
+    if (!pts.length) return state.params.energy;
+    if (bar <= pts[0].bar) return pts[0].v;
+    for (let i = 1; i < pts.length; i++) if (bar <= pts[i].bar) { const a = pts[i - 1], b = pts[i]; return lerp(a.v, b.v, (bar - a.bar) / Math.max(1e-6, b.bar - a.bar)); }
+    return pts[pts.length - 1].v;
+  },
+  sortPoints() { TL().energyCurve.points.sort((a, b) => a.bar - b.bar); },
+  /** Energy used when generating a clip at a bar. */
+  energyAt(bar, sectionType) {
+    if (TL().energyCurve.on && TL().energyCurve.points.length) return clamp(this.curveValue(bar), 0, 100);
+    const sc = sectionType || ((TL().clips.find((c) => c.lane === "sec" && c.start <= bar + 1e-6 && c.start + c.length > bar + 1e-6) || {}).type);
+    return clamp(state.params.energy + ((SECTION_TYPES[sc] || {}).energy || 0), 0, 100);
+  },
+  dominantGenre(role) { const w = roleWeights(role); return Object.keys(w).reduce((a, b) => (w[a] >= w[b] ? a : b)); },
+
+  /* ================= generating patterns (uses the Generator module) ================= */
+  /** Shared library entry for one-shot FX clips (they need no pattern data). */
+  fxPattern(kind) {
+    const id = "fx-" + kind, lib = TL().library;
+    if (!lib[id]) lib[id] = { id, kind, bars: 1, data: null, genre: null, label: kind === "revcym" ? "reverse cymbal" : kind };
+    return id;
+  },
+  /**
+   * Generate a new pattern into the library and return its id.
+   * kind: drum | fill | bass | chord | lead | arp | riser | revcym | impact
+   */
+  generatePattern(kind, opts = {}) {
+    if (["riser", "revcym", "impact"].includes(kind)) return this.fxPattern(kind);
+    const song = rt.song || resolveSong();
+    const spb = stepsPerBar(), bars = Math.max(1, Math.round(opts.bars || state.patternBars)), len = bars * spb;
+    const energy = opts.energy ?? state.params.energy;
+    const role = kind === "drum" || kind === "fill" ? "drums" : kind === "bass" ? "bass" : kind === "chord" ? "harmony" : "lead";
+    const base = song.profiles[role];
+    const profile = Object.assign({}, base, { density: clamp(base.density * (0.55 + energy / 100 * 0.9), 0.1, 1) });
+    const n = TL().nextId, tag = opts.tag || "gen";
+    const g = { profile, len, spb, energy, seed: state.seed, bpm: state.bpm, scaleSize: song.melodic.length,
+      rng: rngFor("clip", kind, tag, n), rngFor: (lane) => rngFor("cliplane", lane, tag, n),
+      extraDensity: opts.sectionType === "solo" ? 0.25 : 0 };
+    let data;
+    if (kind === "drum") {
+      data = Gen.drumPattern(g);
+      const st = SECTION_TYPES[opts.sectionType];
+      if (st) DRUM_LANES.forEach((l) => { if (!sectionLayerOn(st, 0, l, energy)) data[l] = new Array(len).fill(0); });
+    } else if (kind === "fill") {
+      const one = Object.assign({}, g, { len: spb });
+      data = Gen.fill({ rng: g.rng, spb, base: Gen.drumPattern(one) });
+    } else if (kind === "bass") data = Gen.bassline(g);
+    else if (kind === "chord") data = Gen.chordRhythm(g);
+    else if (kind === "lead") data = Gen.melody(g);
+    else data = Gen.arpeggio(g);
+    const styleLabel = kind === "drum" ? (profile.kickType + " beat") : kind === "fill" ? "fill" : kind === "bass" ? profile.bassStyle : kind === "chord" ? profile.chordStyle : kind === "lead" ? profile.melodyStyle : profile.arpStyle;
+    const id = this.newId("p");
+    TL().library[id] = { id, kind, bars: kind === "fill" ? 1 : bars, data, genre: this.dominantGenre(role),
+      label: (opts.sectionType && SECTION_TYPES[opts.sectionType] ? opts.sectionType + " " : "") + styleLabel, energy: Math.round(energy), section: opts.sectionType || null };
+    return id;
+  },
+  /** Add the current live pattern of a lane to the library (de-duplicated). */
+  libFromLive(laneId) {
+    const lane = this.laneDef(laneId);
+    const kind = { drums: "drum", bass: "bass", chords: "chord", lead: "lead", arp: "arp" }[laneId];
+    let data;
+    if (laneId === "drums") { data = {}; DRUM_LANES.forEach((l) => { resizePattern(l); data[l] = state.patterns[l].slice(); }); }
+    else { resizePattern(lane.tracks[0]); data = deepCopy(state.patterns[lane.tracks[0]]); }
+    const key = kind + JSON.stringify(data);
+    const known = tlRt.liveHash.get(key);
+    if (known && this.lib(known)) return known;
+    const id = this.newId("p");
+    const role = lane.role;
+    const prof = rt.song ? rt.song.profiles[role] : {};
+    TL().library[id] = { id, kind, bars: state.patternBars, data, genre: this.dominantGenre(role), label: "live " + (kind === "drum" ? (prof.kickType || "") + " beat" : kind === "bass" ? prof.bassStyle : kind === "chord" ? prof.chordStyle : kind === "lead" ? prof.melodyStyle : prof.arpStyle), energy: Math.round(state.params.energy) };
+    tlRt.liveHash.set(key, id);
+    return id;
+  },
+
+  /* ================= actions (all undoable) ================= */
+  /** Create a clip on empty space ("Generate clip here"). */
+  generateAt(laneId, bar) {
+    const lane = this.laneDef(laneId); if (!lane) return;
+    const start = Math.max(0, this.snapDown(bar));
+    if (this.overlaps(laneId, start, start + this.minLen())) { toast("That spot is already used", true); return; }
+    let len = laneId === "sec" ? TL_DEFAULT_BARS.section : laneId === "fx" ? TL_DEFAULT_BARS.riser : TL_DEFAULT_BARS.clip;
+    const next = TL().clips.filter((c) => c.lane === laneId && c.start >= start - 1e-6).reduce((m, c) => Math.min(m, c.start), Infinity);
+    len = r6(Math.min(len, next - start));
+    if (len < this.minLen() - 1e-6) { toast("Not enough free space here", true); return; }
+    tlAction("Generate clip", (t) => {
+      const c = { id: this.newId(), lane: laneId, start, length: len, offset: 0, gain: 1, lock: false };
+      if (laneId === "sec") c.type = "groove";
+      else c.patternId = this.generatePattern(lane.newKind, { bars: laneId === "fx" ? len : state.patternBars, energy: this.energyAt(start), tag: "here" });
+      t.clips.push(c); tlRt.sel = new Set([c.id]);
+    });
+    toast("Clip generated (blend, style, seed and energy)");
+  },
+  deleteSel() {
+    const t = TL();
+    if (tlRt.sel.size) { tlAction("Delete clips", (tt) => { tt.clips = tt.clips.filter((c) => !tlRt.sel.has(c.id)); }); tlRt.sel.clear(); return; }
+    if (tlRt.selMarker >= 0 && t.markers[tlRt.selMarker]) { const i = tlRt.selMarker; tlAction("Delete scene marker", (tt) => tt.markers.splice(i, 1)); tlRt.selMarker = -1; return; }
+    if (tlRt.selPoint >= 0 && t.energyCurve.points[tlRt.selPoint]) { const i = tlRt.selPoint; tlAction("Delete energy point", (tt) => tt.energyCurve.points.splice(i, 1)); tlRt.selPoint = -1; }
+  },
+  duplicateSel() {
+    const ids = [...tlRt.sel]; if (!ids.length) { toast("Select clips first"); return; }
+    const clips = ids.map((id) => this.clipById(id)).filter(Boolean);
+    const span = r6(Math.max(...clips.map((c) => c.start + c.length)) - Math.min(...clips.map((c) => c.start)));
+    const placed = this.validate(this.placeRaw(ids, span, 0), true);
+    if (placed) this.commitPlaced(placed, "Duplicate clips", true); else toast("No free space after the selection", true);
+  },
+  /** Split selected clips (or all clips under the playhead) at the playhead. */
+  split() {
+    const pos = this.snap(this.playhead()), t = TL();
+    const targets = t.clips.filter((c) => (tlRt.sel.size ? tlRt.sel.has(c.id) : true) && c.start < pos - 1e-6 && c.start + c.length > pos + 1e-6);
+    if (!targets.length) { toast("Move the playhead inside a clip to split it"); return; }
+    tlAction("Split clips", (tt) => {
+      targets.forEach((c) => {
+        const idx = tt.clips.findIndex((x) => x.id === c.id);
+        const left = { ...c, length: r6(pos - c.start) };
+        const right = { ...c, id: this.newId(), start: pos, length: r6(c.start + c.length - pos), offset: r6((c.offset || 0) + (pos - c.start)) };
+        tt.clips.splice(idx, 1, left, right);
+      });
+    });
+  },
+  /** Merge adjacent selected clips of the same pattern (and continuous content). */
+  merge() {
+    const t = TL(), sel = t.clips.filter((c) => tlRt.sel.has(c.id)).sort((a, b) => (a.lane < b.lane ? -1 : a.lane > b.lane ? 1 : a.start - b.start));
+    const pairs = [];
+    for (let i = 1; i < sel.length; i++) {
+      const a = sel[i - 1], b = sel[i];
+      if (a.lane !== b.lane || Math.abs(a.start + a.length - b.start) > 1e-6) continue;
+      if (a.lane === "sec" ? a.type !== b.type : a.patternId !== b.patternId) continue;
+      const p = this.lib(a.patternId), pb = p ? p.bars : 1;
+      if (a.lane !== "sec" && p && p.data && Math.abs(mod((a.offset || 0) + a.length - (b.offset || 0) + 1e-6, pb) - 1e-6) > 1e-3) continue;
+      pairs.push([a.id, b.id]);
+    }
+    if (!pairs.length) { toast("Select adjacent clips that use the same pattern"); return; }
+    tlAction("Merge clips", (tt) => {
+      pairs.reverse().forEach(([ai, bi]) => {
+        const a = tt.clips.find((c) => c.id === ai), b = tt.clips.find((c) => c.id === bi); if (!a || !b) return;
+        const merged = { ...a, length: r6(a.length + b.length) };
+        tt.clips = tt.clips.filter((c) => c.id !== bi).map((c) => (c.id === ai ? merged : c));
+      });
+    });
+    tlRt.sel = new Set(pairs.map((p) => p[0]));
+  },
+  /** Regenerate the patterns of unlocked clips in unlocked lanes. */
+  regenerateClips(ids) {
+    const t = TL();
+    const targets = new Set(t.clips.filter((c) => (!ids || ids.includes(c.id)) && c.lane !== "sec" && c.lane !== "fx" && !c.lock && !this.laneLocked(c.lane)).map((c) => c.id));
+    if (!targets.size) { toast("Nothing to regenerate (clips or lanes are locked, or the timeline is empty)"); return; }
+    resolveSong();
+    tlRt.regenCount = (tlRt.regenCount || 0) + 1;
+    tlAction("Regenerate clips", (tt) => {
+      const map = {};
+      tt.clips = tt.clips.map((c) => {
+        if (!targets.has(c.id)) return c;
+        const old = this.lib(c.patternId); if (!old || !old.data) return c;
+        if (!map[c.patternId]) map[c.patternId] = this.generatePattern(old.kind, { bars: old.bars, energy: old.energy ?? state.params.energy, sectionType: old.section, tag: "regen" + tlRt.regenCount });
+        return { ...c, patternId: map[c.patternId] };
+      });
+    });
+    toast("Regenerated " + targets.size + " clip(s). Locked clips and lanes were kept.");
+  },
+  /** Fill the timeline from the generative arrangement (sections, clips, FX, energy curve). */
+  buildFromArrangement() {
+    if (!rt.song) resolveSong();
+    const arr = rt.arr.filter((s) => !s.temp);
+    tlAction("Build from arrangement", (t) => {
+      t.clips = t.clips.filter((c) => c.lock || this.laneLocked(c.lane));
+      t.energyCurve.points = [];
+      const cache = {};
+      let bar = 0;
+      arr.forEach((sec, si) => {
+        const st = SECTION_TYPES[sec.type] || SECTION_TYPES.groove;
+        const energy = clamp(state.params.energy + st.energy, 0, 100);
+        const free = (lane, s, l) => !this.overlaps(lane, s, s + l);
+        if (free("sec", bar, sec.bars)) t.clips.push({ id: this.newId(), lane: "sec", start: bar, length: sec.bars, offset: 0, gain: 1, lock: false, type: sec.type });
+        t.energyCurve.points.push({ bar, v: Math.round(energy) });
+        if (st.ramp) t.energyCurve.points.push({ bar: bar + sec.bars - 0.25, v: Math.round(clamp(energy + st.ramp, 0, 100)) });
+        TL_LANES.forEach((lane) => {
+          if (lane.id === "fx" || this.laneLocked(lane.id)) return;
+          if (!lane.tracks.some((tr) => sectionLayerOn(st, 0, tr, energy))) return;
+          const key = lane.id + ":" + sec.type;
+          if (!cache[key]) cache[key] = this.generatePattern(lane.newKind, { bars: state.patternBars, energy, sectionType: sec.type, tag: key });
+          if (free(lane.id, bar, sec.bars)) t.clips.push({ id: this.newId(), lane: lane.id, start: bar, length: sec.bars, offset: 0, patternId: cache[key], gain: 1, lock: false });
+        });
+        if (!this.laneLocked("fx")) {
+          const next = arr[si + 1];
+          if (st.riser) { const rb = Math.min(sec.bars, 8); if (free("fx", bar + sec.bars - rb, rb)) t.clips.push({ id: this.newId(), lane: "fx", start: bar + sec.bars - rb, length: rb, offset: 0, patternId: this.fxPattern("riser"), gain: 1, lock: false }); }
+          else if (next && (next.type === "drop" || next.type === "chorus") && free("fx", bar + sec.bars - 1, 1)) t.clips.push({ id: this.newId(), lane: "fx", start: bar + sec.bars - 1, length: 1, offset: 0, patternId: this.fxPattern("revcym"), gain: 1, lock: false });
+        }
+        bar += sec.bars;
+      });
+      t.energyCurve.points.push({ bar, v: Math.round(clamp(state.params.energy - 20, 0, 100)) });
+      t.loop = { on: false, start: 0, end: Math.max(1, bar) };
+    });
+    toast("Timeline built from the arrangement");
+  },
+  clearTimeline() {
+    tlAction("Clear timeline", (t) => { t.clips = t.clips.filter((c) => c.lock || this.laneLocked(c.lane)); t.markers = []; t.energyCurve.points = []; });
+    tlRt.sel.clear();
+  },
+  toggleLoop() { tlAction("Loop on/off", (t) => { t.loop.on = !t.loop.on; if (t.loop.end <= t.loop.start) t.loop.end = t.loop.start + 4; }); },
+  setLoopPoint(which, bar) { tlAction("Set loop " + which, (t) => { const b = Math.max(0, Math.round(bar)); if (which === "start") t.loop.start = Math.min(b, t.loop.end - 1); else t.loop.end = Math.max(b, t.loop.start + 1); t.loop.on = true; }); },
+  addMarker(scene, bar) {
+    if (!Scenes.slots[scene]) { toast("Scene " + (scene + 1) + " is empty. Save it first (Shift+" + (scene + 1) + ")", true); return; }
+    tlAction("Add scene marker", (t) => t.markers.push({ bar: Math.max(0, Math.round(bar)), scene }));
+  },
+  addPoint(bar, v) { tlAction("Add energy point", (t) => { t.energyCurve.points.push({ bar: r6(Math.max(0, bar)), v: Math.round(clamp(v, 0, 100)) }); this.sortPoints(); }); },
+  setMode(m) {
+    if (m === TL().mode && !tlRt.pendingMode) return;
+    if (m === "arrange" && tlRt.rec) this.stopRecording();
+    if (m === "arrange" && !TL().clips.some((c) => c.lane !== "sec")) this.buildFromArrangement();
+    if (state.playing) { tlRt.pendingMode = m; tlRt.nextBar = Math.floor(tlRt.cursor); toast((m === "arrange" ? "ARRANGE" : "LIVE") + " mode on the next bar"); }
+    else TL().mode = m;
+    this.syncToolbar(); this.dirty = this.odirty = true;
+  },
+  /** Called by the scheduler on a bar line: apply a pending mode switch. */
+  applyPendingMode() { if (tlRt.pendingMode) { TL().mode = tlRt.pendingMode; tlRt.pendingMode = null; UI.queue("timeline"); } },
+
+  /* ---------- move / resize validation ---------- */
+  /** Where clips would land after moving by dBar / dLane (not validated). */
+  placeRaw(ids, dBar, dLane) {
+    const lanes = TL().lanes;
+    return ids.map((id) => this.clipById(id)).filter(Boolean).map((c) => {
+      let lane = c.lane;
+      if (c.lane !== "sec" && dLane) { const i = lanes.indexOf(c.lane) + dLane; lane = lanes[i] || null; }
+      return { ...c, lane, start: r6(c.start + dBar) };
+    });
+  },
+  /** Validate placed clips: compatible lanes, no overlaps, not before bar 1. Returns placed or null. */
+  validate(placed, dup) {
+    if (!placed.length) return null;
+    const exclude = new Set(dup ? [] : placed.map((p) => p.id));
+    for (let i = 0; i < placed.length; i++) {
+      const p = placed[i];
+      if (!p.lane || p.start < -1e-6 || !this.compatible(this.clipKind(p), p.lane)) return null;
+      if (this.overlaps(p.lane, p.start, p.start + p.length, exclude)) return null;
+      for (let j = 0; j < i; j++) { const q = placed[j]; if (q.lane === p.lane && q.start < p.start + p.length - 1e-6 && q.start + q.length > p.start + 1e-6) return null; }
+    }
+    return placed;
+  },
+  resizeRaw(id, edge, bar) {
+    const c = this.clipById(id); if (!c) return null;
+    const end = c.start + c.length, ml = this.minLen();
+    if (edge === "right") { const ne = Math.max(c.start + ml, this.snap(bar)); return { ...c, length: r6(ne - c.start) }; }
+    const ns = Math.min(end - ml, Math.max(0, this.snap(bar)));
+    return { ...c, start: r6(ns), length: r6(end - ns), offset: r6((c.offset || 0) + (ns - c.start)) };
+  },
+  commitPlaced(placed, label, dup) {
+    tlAction(label, (t) => {
+      if (dup) { const ids = []; placed.forEach((p) => { const c = { ...p, id: this.newId() }; t.clips.push(c); ids.push(c.id); }); tlRt.sel = new Set(ids); }
+      else { const map = new Map(placed.map((p) => [p.id, p])); t.clips = t.clips.map((c) => map.get(c.id) || c); }
+    });
+  },
+  flashInvalid(rects) { tlRt.flash = { rects: (rects || []).filter(Boolean), until: performance.now() + 450 }; this.odirty = true; toast("Can't drop there", true); },
+
+  /* ================= playback (called by the scheduler) ================= */
+  onStart() {
+    const t = TL();
+    tlRt.nextBar = Math.floor(tlRt.cursor); tlRt.jump = -1;
+    if (t.loop.on && (tlRt.nextBar < t.loop.start || tlRt.nextBar >= t.loop.end)) tlRt.nextBar = Math.floor(t.loop.start);
+  },
+  onStop() {
+    if (tlRt.rec) this.stopRecording();
+    if (tlRt.render) { const r = tlRt.render; tlRt.render = null; if (!r.finished && Recorder.active) Recorder.stop(); }
+    tlRt.playPos = null; tlRt.pendingMode = null; this.syncToolbar(); this.odirty = true;
+  },
+  /** Bar line in ARRANGE mode: position, loop, plan, section, scene markers. */
+  onBarStart(time) {
+    const t = TL();
+    if (rt.queuedScene >= 0) { Scenes.apply(rt.queuedScene); rt.queuedScene = -1; }
+    let bar = tlRt.nextBar;
+    if (tlRt.jump >= 0) { bar = tlRt.jump; tlRt.jump = -1; }
+    if (tlRt.render) {
+      if (bar >= tlRt.render.endBar && !tlRt.render.done) {
+        tlRt.render.done = true;
+        const wait = Math.max(0, time - rt.ctx.currentTime) + 2.6; // let the reverb tail ring out
+        setTimeout(() => { if (tlRt.render) tlRt.render.finished = true; Recorder.stop(); tlRt.render = null; stopTransport(); toast("Timeline rendered to WAV"); }, wait * 1000);
+      }
+    } else if (t.loop.on && t.loop.end > t.loop.start && (bar >= t.loop.end || bar < t.loop.start - 1e-6)) bar = Math.floor(t.loop.start);
+    else if (bar >= this.end()) bar = 0;
+    tlRt.bar = bar; tlRt.nextBar = bar + 1;
+    // the plan: clips overlapping this bar (edits made now show up next bar)
+    tlRt.plan = {};
+    TL_LANES.forEach((l) => (tlRt.plan[l.id] = t.clips.filter((c) => c.lane === l.id && c.start < bar + 1 - 1e-6 && c.start + c.length > bar + 1e-6)));
+    // section from the sections lane
+    const sc = t.clips.find((c) => c.lane === "sec" && c.start <= bar + 1e-6 && c.start + c.length > bar + 1e-6);
+    tlRt.section = sc ? { type: sc.type, bars: Math.max(1, Math.round(sc.length)), start: sc.start } : null;
+    rt.secBar = sc ? Math.floor(bar - sc.start + 1e-6) : 0;
+    const st = sc ? SECTION_TYPES[sc.type] || SECTION_TYPES.groove : null;
+    rt.sectionSend = st ? st.sends : { reverb: 1, delay: 1 };
+    if (sc && Math.abs(bar - sc.start) < 1e-6 && st.impact && !(tlRt.render && tlRt.render.done)) {
+      INSTRUMENTS.crash.trigger(time, 49, 0.9, { dest: rt.channels.ohat.input });
+      INSTRUMENTS.impact.trigger(time, 0, 0.9, { dest: rt.channels.kick.input });
+    }
+    t.markers.forEach((m) => { if (Math.round(m.bar) === bar && Scenes.slots[m.scene]) Scenes.apply(m.scene); });
+    rt.chord = chordForBar(bar);
+    updateDrift(); computeContinuous(rt.song); applyParams();
+    if (!state.tempoLock && rt.song) {
+      const diff = rt.song.bpmTarget - state.bpm, maxStep = DEFAULTS.bpmGlidePerBeat * (TIME_SIGNATURES[state.timeSig] || { beats: 4 }).beats;
+      if (Math.abs(diff) > 0.01) { state.bpm = Math.round((state.bpm + clamp(diff, -maxStep, maxStep)) * 10) / 10; UI.queue("bpm"); }
+    }
+    rt.barStart = time;
+    UI.queue("section");
+  },
+  /**
+   * Everything that should sound at one timeline step (pos = step index from bar 1).
+   * Used by the scheduler (with the per-bar plan) and by the MIDI exporter.
+   */
+  eventsAt(pos, plan) {
+    const spb = stepsPerBar(), out = { drums: [], mel: [], fx: [] };
+    TL_LANES.forEach((lane) => {
+      const list = plan ? plan[lane.id] || [] : TL().clips.filter((c) => c.lane === lane.id);
+      const c = list.find((x) => pos >= Math.round(x.start * spb) && pos < Math.round((x.start + x.length) * spb));
+      if (!c) return;
+      const pat = this.lib(c.patternId); if (!pat) return;
+      const cs = Math.round(c.start * spb), gain = c.gain ?? 1;
+      if (lane.id === "fx") { if (pos === cs) out.fx.push({ kind: pat.kind, bars: c.length, gain }); return; }
+      const L = this.patLen(pat); if (!L) return;
+      const local = mod(pos - cs + Math.round((c.offset || 0) * spb), L);
+      if (pat.kind === "drum" || pat.kind === "fill") DRUM_LANES.forEach((dl) => { const v = (pat.data[dl] || [])[local] || 0; if (v > 0) out.drums.push({ lane: dl, v: v * gain, pIdx: local }); });
+      else { const s = pat.data[local]; if (s) out.mel.push({ track: lane.tracks[0], step: Object.assign({}, s, { v: Math.min(1, s.v * gain) }) }); }
+    });
+    return out;
+  },
+  triggerFx(f, time) {
+    const dest = rt.channels.fx.input, dur = f.bars * barDuration(), v = clamp(0.9 * f.gain, 0, 1);
+    if (f.kind === "riser") INSTRUMENTS.riser.trigger(time, 0, v, { dest, dur });
+    else if (f.kind === "revcym") INSTRUMENTS.revcym.trigger(time, 0, v, { dest, dur: Math.min(dur, 4) });
+    else if (f.kind === "impact") { INSTRUMENTS.crash.trigger(time, 49, v, { dest }); INSTRUMENTS.impact.trigger(time, 0, v, { dest }); }
+  },
+  /** Render the timeline to a WAV file (plays it once while recording). */
+  renderWav() {
+    if (!TL().clips.some((c) => c.lane !== "sec")) { toast("The timeline is empty", true); return; }
+    if (!initAudio()) return;
+    if (state.playing) stopTransport();
+    TL().mode = "arrange"; tlRt.pendingMode = null;
+    const t = TL();
+    tlRt.cursor = t.loop.on ? t.loop.start : 0;
+    tlRt.render = { endBar: t.loop.on ? t.loop.end : this.end(), done: false };
+    setTimeout(() => { Recorder.start(); startTransport(); toast("Rendering the timeline to WAV in real time..."); }, 250);
+    this.syncToolbar();
+  },
+
+  /* ================= LIVE mode: record to timeline ================= */
+  toggleRecording() { if (tlRt.rec) this.stopRecording(); else this.startRecording(); },
+  startRecording() {
+    if (TL().mode !== "live") { TL().mode = "live"; tlRt.pendingMode = null; }
+    tlRt.rec = { startBar: this.end() > 1 || TL().clips.length ? this.end() : 0, firstSongBar: null, before: History.light(), lastSec: null };
+    if (!state.playing) { startTransport(); hideStart(); }
+    toast("Recording to the timeline (from the next bar)");
+    this.syncToolbar();
+  },
+  stopRecording() {
+    const r = tlRt.rec; tlRt.rec = null; if (!r) return;
+    History.commit("Record to timeline", r.before);
+    this.syncToolbar(); this.dirty = true;
+    toast("Recording stopped");
+  },
+  /** Called on every LIVE bar line while recording. */
+  recordBar(sectionStart) {
+    const r = tlRt.rec; if (!r) return;
+    if (r.firstSongBar === null) r.firstSongBar = rt.songBar;
+    const tb = r.startBar + (rt.songBar - r.firstSongBar);
+    const energy = Arr.energy(), spb = stepsPerBar(), L = patternLength();
+    const phase = r6(((rt.songBar * spb) % L) / spb);
+    const t = TL();
+    const append = (laneId, pid, offset, type) => {
+      const last = t.clips.filter((c) => c.lane === laneId && Math.abs(c.start + c.length - tb) < 1e-6).pop();
+      if (last && (laneId === "sec" ? last.type === type && !sectionStart : last.patternId === pid)) {
+        const p = this.lib(pid), pb = p && p.bars ? p.bars : 1;
+        const cont = laneId === "sec" || Math.abs(mod((last.offset || 0) + last.length - offset + 1e-6, pb) - 1e-6) < 1e-3;
+        if (cont) { t.clips = t.clips.map((c) => (c === last ? { ...c, length: r6(c.length + 1) } : c)); return; }
+      }
+      const c = { id: this.newId(), lane: laneId, start: tb, length: 1, offset, gain: 1, lock: false };
+      if (laneId === "sec") c.type = type; else c.patternId = pid;
+      t.clips.push(c);
+    };
+    TL_LANES.forEach((lane) => {
+      if (lane.id === "fx") return;
+      const active = lane.tracks.some((tr) => Arr.layerOn(tr, energy) && (state.patterns[tr] || []).some((s) => (typeof s === "number" ? s > 0 : !!s)));
+      if (!active) return;
+      if (lane.id === "drums" && rt.fillBar === rt.songBar && rt.fillPattern) {
+        const id = this.newId("p");
+        t.library[id] = { id, kind: "fill", bars: 1, data: deepCopy(rt.fillPattern), genre: this.dominantGenre("drums"), label: "live fill", energy: Math.round(energy) };
+        append("drums", id, 0);
+        return;
+      }
+      append(lane.id, this.libFromLive(lane.id), phase);
+    });
+    const sec = Arr.current();
+    append("sec", null, 0, sec.type);
+    if (sectionStart) {
+      t.energyCurve.points.push({ bar: tb, v: Math.round(energy) });
+      const st = Arr.type();
+      if (st.riser) { const rb = Math.min(sec.bars, 8); if (!this.overlaps("fx", tb + sec.bars - rb, tb + sec.bars)) t.clips.push({ id: this.newId(), lane: "fx", start: tb + sec.bars - rb, length: rb, offset: 0, patternId: this.fxPattern("riser"), gain: 1, lock: false }); }
+    }
+    this.dirty = true;
+    UI.queue("timeline");
+  },
+
+  /* ================= MIDI import (.mid dropped on the timeline) ================= */
+  /** Minimal Standard MIDI File reader (format 0/1, PPQ timing). */
+  parseMidi(buf) {
+    const v = new DataView(buf); let o = 0;
+    const str = (n) => { let s = ""; for (let i = 0; i < n; i++) s += String.fromCharCode(v.getUint8(o + i)); return s; };
+    const vlq = () => { let n = 0, b; do { b = v.getUint8(o++); n = (n << 7) | (b & 0x7f); } while (b & 0x80); return n; };
+    if (str(4) !== "MThd") throw new Error("Not a MIDI file");
+    o += 4; const hlen = v.getUint32(o); o += 4;
+    const ntrk = v.getUint16(o + 2), div = v.getUint16(o + 4); o += hlen;
+    if (div & 0x8000) throw new Error("SMPTE-timed MIDI files are not supported");
+    const out = { ppq: div, tracks: [], tempo: null };
+    for (let ti = 0; ti < ntrk && o < v.byteLength - 8; ti++) {
+      if (str(4) !== "MTrk") throw new Error("Broken MIDI track");
+      o += 4; const len = v.getUint32(o); o += 4; const endO = o + len;
+      const track = { name: "Track " + (ti + 1), notes: [] }, open = {};
+      let tick = 0, status = 0;
+      while (o < endO) {
+        tick += vlq();
+        let b = v.getUint8(o);
+        if (b & 0x80) { status = b; o++; } else if (!status) throw new Error("Bad running status");
+        if (status === 0xff) {
+          const type = v.getUint8(o++), l = vlq();
+          if (type === 0x51 && l === 3) out.tempo = out.tempo || (v.getUint8(o) << 16 | v.getUint8(o + 1) << 8 | v.getUint8(o + 2));
+          if (type === 0x03) track.name = str(l);
+          o += l; if (type === 0x2f) break; status = 0; continue;
+        }
+        if (status === 0xf0 || status === 0xf7) { o += vlq(); status = 0; continue; }
+        const hi = status & 0xf0, ch = status & 0x0f;
+        if (hi === 0x80 || hi === 0x90) {
+          const note = v.getUint8(o), vel = v.getUint8(o + 1); o += 2;
+          const key = ch * 128 + note;
+          if (hi === 0x90 && vel > 0) (open[key] = open[key] || []).push({ tick, vel });
+          else if (open[key] && open[key].length) { const s = open[key].shift(); track.notes.push({ tick: s.tick, dur: Math.max(1, tick - s.tick), note, vel: s.vel, ch }); }
+        } else if (hi === 0xc0 || hi === 0xd0) o += 1;
+        else o += 2;
+      }
+      o = endO;
+      if (track.notes.length) out.tracks.push(track);
+    }
+    return out;
+  },
+  importMidiFile(file, dropEvent) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try { this.importMidi(this.parseMidi(reader.result), file.name, dropEvent); }
+      catch (e) { toast("MIDI import failed: " + e.message, true); log("MIDI import failed: " + e.message, "error"); }
+    };
+    reader.readAsArrayBuffer(file);
+  },
+  /** Turn parsed MIDI into library patterns + clips (absolute notes, quantized to 16ths). */
+  importMidi(midi, name, dropEvent) {
+    const spb = stepsPerBar(), stepTicks = midi.ppq / 4;
+    const all = []; midi.tracks.forEach((t) => t.notes.forEach((n) => all.push(n)));
+    if (!all.length) { toast("No notes in that MIDI file", true); return; }
+    const maxTick = Math.max(...all.map((n) => n.tick + n.dur));
+    const bars = clamp(Math.ceil(maxTick / stepTicks / spb), 1, 64), len = bars * spb;
+    const groups = [];
+    const drumNotes = all.filter((n) => n.ch === 9);
+    midi.tracks.forEach((t) => { const notes = t.notes.filter((n) => n.ch !== 9); if (notes.length) groups.push({ name: t.name, notes, avg: notes.reduce((s, n) => s + n.note, 0) / notes.length }); });
+    // polyphony = notes per distinct start step
+    groups.forEach((g) => { const starts = new Set(g.notes.map((n) => Math.round(n.tick / stepTicks))); g.poly = g.notes.length / starts.size; });
+    groups.sort((a, b) => a.avg - b.avg);
+    const assign = {};
+    const chordG = groups.filter((g) => g.poly > 1.5).sort((a, b) => b.poly - a.poly)[0];
+    if (chordG) assign.chords = chordG;
+    const rest = groups.filter((g) => g !== chordG);
+    if (rest.length === 1) assign[rest[0].avg < 50 ? "bass" : "lead"] = rest[0];
+    else if (rest.length > 1) { assign.bass = rest[0]; assign.lead = rest[rest.length - 1]; if (rest.length > 2) assign.arp = rest[rest.length - 2]; }
+    const t = TL();
+    let start = Math.max(0, Math.floor(this.playhead()));
+    if (dropEvent) { const r = $("tlOverlay").getBoundingClientRect(); if (dropEvent.clientX >= r.left && dropEvent.clientX <= r.right) start = Math.max(0, Math.floor(this.barOf(dropEvent.clientX - r.left))); }
+    const mkPattern = (kind, data, label) => { const id = this.newId("p"); t.library[id] = { id, kind, bars, data, genre: null, label: "MIDI " + label, energy: Math.round(state.params.energy), abs: kind !== "drum" }; return id; };
+    const created = [];
+    tlAction("Import MIDI", () => {
+      const place = (laneId, pid) => {
+        let s = start; while (this.overlaps(laneId, s, s + bars)) s = Math.ceil(t.clips.filter((c) => c.lane === laneId && c.start + c.length > s && c.start < s + bars).reduce((m, c) => Math.max(m, c.start + c.length), s));
+        const c = { id: this.newId(), lane: laneId, start: s, length: bars, offset: 0, patternId: pid, gain: 1, lock: false };
+        t.clips.push(c); created.push(c.id);
+      };
+      if (drumNotes.length) {
+        const data = {}; DRUM_LANES.forEach((l) => (data[l] = new Array(len).fill(0)));
+        drumNotes.forEach((n) => { const i = Math.round(n.tick / stepTicks); if (i >= len) return; const lane = TL_GM_DRUM_MAP[n.note] || "perc"; data[lane][i] = Math.max(data[lane][i], Math.round((n.vel / 127) * 100) / 100); });
+        place("drums", mkPattern("drum", data, name + " drums"));
+      }
+      Object.keys(assign).forEach((laneId) => {
+        const g = assign[laneId], data = new Array(len).fill(null);
+        g.notes.forEach((n) => {
+          const i = Math.round(n.tick / stepTicks); if (i >= len) return;
+          const l = Math.max(1, Math.round(n.dur / stepTicks)), vv = Math.round((n.vel / 127) * 100) / 100;
+          if (laneId === "chords") { const cur = data[i] || { ms: [], l, v: vv }; cur.ms.push(n.note); data[i] = cur; }
+          else if (!data[i] || (laneId === "bass" ? n.note < data[i].m : n.note > data[i].m)) data[i] = { m: n.note, l, v: vv };
+        });
+        place(laneId, mkPattern({ bass: "bass", chords: "chord", lead: "lead", arp: "arp" }[laneId], data, name + " " + g.name));
+      });
+    });
+    if (midi.tempo && !state.tempoLock) { state.bpm = clamp(Math.round(60000000 / midi.tempo * 2) / 2, 40, 220); state.tempoLock = true; applyParams(); UI.updateTransport(); }
+    tlRt.sel = new Set(created);
+    if (TL().mode !== "arrange") this.setMode("arrange");
+    toast("Imported " + name + ": " + created.length + " clip(s)");
+  },
+
+  /* ================= geometry ================= */
+  lanesTop() { return TL_GEOMETRY.ruler + TL_GEOMETRY.curve + TL_GEOMETRY.sec; },
+  xOf(bar) { return (bar - tlRt.scroll) * TL().zoomX; },
+  barOf(x) { return x / TL().zoomX + tlRt.scroll; },
+  regionAt(y) { const G = TL_GEOMETRY; return y < G.ruler ? "ruler" : y < G.ruler + G.curve ? "curve" : y < this.lanesTop() ? "sec" : "lane"; },
+  laneIdAtY(y) { if (this.regionAt(y) === "sec") return "sec"; const i = Math.floor((y - this.lanesTop()) / TL().zoomY); return TL().lanes[i] || null; },
+  laneY(id) { return id === "sec" ? TL_GEOMETRY.ruler + TL_GEOMETRY.curve : this.lanesTop() + TL().lanes.indexOf(id) * TL().zoomY; },
+  laneH(id) { return id === "sec" ? TL_GEOMETRY.sec : TL().zoomY; },
+  valueOfY(y) { const G = TL_GEOMETRY; return Math.round(clamp(100 - ((y - G.ruler - 4) / (G.curve - 8)) * 100, 0, 100)); },
+  yOfValue(v) { const G = TL_GEOMETRY; return G.ruler + 4 + (1 - v / 100) * (G.curve - 8); },
+  hitClip(laneId, bar) { return TL().clips.find((c) => c.lane === laneId && bar >= c.start && bar < c.start + c.length); },
+  edgeAt(c, p) {
+    const x0 = this.xOf(c.start), x1 = this.xOf(c.start + c.length), w = x1 - x0, y0 = this.laneY(c.lane);
+    if (w > 16 && p.x - x0 < 7) return "left";
+    if (w > 16 && x1 - p.x < 7) return "right";
+    if (c.lane !== "sec" && c.lane !== "fx" && p.y - y0 < 8) return "top";
+    return "body";
+  },
+  hitLoopHandle(p) { const t = TL(); if (p.y < 12) return null; if (Math.abs(p.x - this.xOf(t.loop.start)) < 7) return "start"; if (Math.abs(p.x - this.xOf(t.loop.end)) < 7) return "end"; return null; },
+  hitMarker(p) { if (p.y > 13) return -1; return TL().markers.findIndex((m) => Math.abs(p.x - this.xOf(m.bar) - 8) < 9); },
+  hitPoint(p) { return TL().energyCurve.points.findIndex((pt) => Math.hypot(p.x - this.xOf(pt.bar), p.y - this.yOfValue(pt.v)) < 8); },
+  maxScroll() { const w = $("tlOverlay").clientWidth || 800; return Math.max(0, this.totalBars() - w / TL().zoomX); },
+  syncScroll() { tlRt.scroll = clamp(tlRt.scroll, 0, this.maxScroll()); const s = $("tlScroll"); s.max = this.maxScroll(); s.value = tlRt.scroll; this.dirty = this.odirty = true; $("tlGenHere").hidden = true; },
+
+  /* ================= UI: init, toolbar, headers, library ================= */
+  init() {
+    $("tlModeLive").onclick = () => this.setMode("live");
+    $("tlModeArrange").onclick = () => this.setMode("arrange");
+    $("tlRec").onclick = () => this.toggleRecording();
+    $("tlBuild").onclick = () => this.buildFromArrangement();
+    $("tlSnap").onchange = (e) => (TL().snap = e.target.value);
+    $("tlZoomIn").onclick = () => this.zoom(1.25);
+    $("tlZoomOut").onclick = () => this.zoom(0.8);
+    $("tlLoop").onchange = () => this.toggleLoop();
+    $("tlCurve").onchange = () => tlAction("Energy curve on/off", (t) => { t.energyCurve.on = !t.energyCurve.on; if (t.energyCurve.on && !t.energyCurve.points.length) t.energyCurve.points = [{ bar: 0, v: Math.round(state.params.energy) }, { bar: Math.max(8, this.end()), v: Math.round(state.params.energy) }]; });
+    $("tlUndo").onclick = () => History.doUndo();
+    $("tlRedo").onclick = () => History.doRedo();
+    $("tlDup").onclick = () => this.duplicateSel();
+    $("tlSplit").onclick = () => this.split();
+    $("tlMerge").onclick = () => this.merge();
+    $("tlDelete").onclick = () => this.deleteSel();
+    $("tlSettings").onclick = () => { const c = this.clipById([...tlRt.sel][0]); if (c) this.openDialog(c); else toast("Select a clip first"); };
+    $("tlRegen").onclick = () => this.regenerateClips(tlRt.sel.size ? [...tlRt.sel] : null);
+    $("tlRenderWav").onclick = () => this.renderWav();
+    $("tlClear").onclick = () => this.clearTimeline();
+    $("tlScroll").oninput = (e) => { tlRt.scroll = +e.target.value; this.syncScroll(); };
+    $("tlGenHere").onclick = () => { const g = tlRt.genHere; $("tlGenHere").hidden = true; if (g) this.generateAt(g.laneId, g.bar); };
+    this.bindCanvas();
+    this.bindDialog();
+    this.bindFileDrop();
+    this.ready = true;
+    this.themeChanged();
+    this.refresh();
+  },
+  zoom(f) { const t = TL(), mid = this.barOf(($("tlOverlay").clientWidth || 800) / 2); t.zoomX = clamp(t.zoomX * f, TL_ZOOM.x[0], TL_ZOOM.x[1]); tlRt.scroll = Math.max(0, mid - ($("tlOverlay").clientWidth || 800) / 2 / t.zoomX); this.syncScroll(); },
+  /** Full refresh after loading a preset / scene / undo. */
+  refresh() { if (!this.ready) return; this.syncToolbar(); this.renderHeaders(); this.renderLibrary(); this.resize(); },
+  /** Something in the timeline data changed. */
+  changed(full) {
+    this.dirty = this.odirty = true;
+    const sig = TL().lanes.join(",");
+    if (full || sig !== this.laneSig) this.renderHeaders();
+    if (Object.keys(TL().library).length !== tlRt.libCount) this.renderLibrary();
+    this.syncToolbar();
+    [...tlRt.sel].forEach((id) => { if (!this.clipById(id)) tlRt.sel.delete(id); });
+  },
+  syncToolbar() {
+    if (!this.ready) return;
+    const t = TL(), mode = tlRt.pendingMode || t.mode;
+    $("tlModeLive").setAttribute("aria-pressed", String(mode === "live")); $("tlModeLive").classList.toggle("on", mode === "live");
+    $("tlModeArrange").setAttribute("aria-pressed", String(mode === "arrange")); $("tlModeArrange").classList.toggle("on", mode === "arrange");
+    $("tlModeArrange").classList.toggle("queued", tlRt.pendingMode === "arrange"); $("tlModeLive").classList.toggle("queued", tlRt.pendingMode === "live");
+    $("tlRec").classList.toggle("on", !!tlRt.rec); $("tlRec").innerHTML = tlRt.rec ? "&#9632; Stop recording" : "&#9679; Record to timeline";
+    $("tlSnap").value = t.snap; $("tlLoop").checked = t.loop.on; $("tlCurve").checked = t.energyCurve.on;
+    $("tlUndo").disabled = !History.undo.length; $("tlRedo").disabled = !History.redo.length;
+    $("tlUndo").title = History.undo.length ? "Undo: " + History.undo[History.undo.length - 1].label + " (Ctrl+Z)" : "Nothing to undo";
+    $("tlRedo").title = History.redo.length ? "Redo: " + History.redo[History.redo.length - 1].label + " (Ctrl+Y)" : "Nothing to redo";
+    $("tlRenderWav").classList.toggle("on", !!tlRt.render);
+  },
+  /** Lane headers: name, mute, solo, lock, volume (bound to the mixer's own track state). */
+  renderHeaders() {
+    if (!this.ready) return;
+    const h = $("tlHeaders"), t = TL(), G = TL_GEOMETRY;
+    this.laneSig = t.lanes.join(",");
+    h.innerHTML = "";
+    const top = el("div", { class: "tlh-top" }); top.style.height = G.ruler + G.curve + "px";
+    top.appendChild(el("span", {}, "Bars / loop / scenes"));
+    top.appendChild(el("span", {}, "Energy curve" + (t.energyCurve.on ? " (on)" : " (off)")));
+    h.appendChild(top);
+    const sec = el("div", { class: "tlh-sec" }, "Sections"); sec.style.height = G.sec + "px"; h.appendChild(sec);
+    t.lanes.forEach((id, i) => {
+      const l = this.laneDef(id); if (!l) return;
+      const row = el("div", { class: "tlh-lane" + (t.zoomY < 40 ? " compact" : ""), tabindex: "0", "aria-label": l.name + " lane. Alt+Up/Down moves the lane." });
+      row.style.height = t.zoomY + "px";
+      const grip = el("span", { class: "grip", title: "Drag to reorder lanes (or Alt+Up/Down)", "aria-hidden": "true" }, "≡");
+      row.appendChild(grip);
+      row.appendChild(el("span", { class: "nm" }, l.name));
+      const st = this.laneState(id);
+      const mini = (label, key, title) => {
+        const b = el("button", { class: "mini", title, "aria-pressed": String(!!st[key]), "aria-label": l.name + " " + title }, label);
+        b.classList.toggle("on", !!st[key]);
+        b.onclick = () => { this.toggleLane(id, key); };
+        return b;
+      };
+      row.append(mini("M", "mute", "Mute"), mini("S", "solo", "Solo"), mini("L", "lock", "Lock"));
+      const vol = el("input", { type: "range", min: "0", max: "1", step: "0.01", "aria-label": l.name + " volume" });
+      vol.value = st.vol;
+      vol.oninput = () => this.setLaneVol(id, +vol.value);
+      row.appendChild(vol);
+      row.addEventListener("keydown", (e) => {
+        if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) { e.preventDefault(); e.stopPropagation(); this.moveLane(id, e.key === "ArrowUp" ? -1 : 1); setTimeout(() => { const r = $("tlHeaders").querySelectorAll(".tlh-lane")[TL().lanes.indexOf(id)]; if (r) r.focus(); }, 0); }
+      });
+      this.bindLaneDrag(grip, row, id, i);
+      h.appendChild(row);
+    });
+  },
+  /** Current mute/solo/lock/vol of a lane (read from the mixer tracks). */
+  laneState(id) {
+    if (id === "fx") return TL().fx;
+    const l = this.laneDef(id), tr = l.tracks.map((t) => state.tracks[t]);
+    return { mute: tr.every((s) => s.mute), solo: tr.some((s) => s.solo), lock: tr.every((s) => s.lock), vol: tr[0].vol };
+  },
+  toggleLane(id, key) {
+    if (id === "fx") TL().fx[key] = !TL().fx[key];
+    else { const l = this.laneDef(id), on = !this.laneState(id)[key]; l.tracks.forEach((t) => (state.tracks[t][key] = on)); }
+    Mixer.apply(); UI.syncMixer(); UI.renderSeq(); this.dirty = true;
+  },
+  setLaneVol(id, v) {
+    if (id === "fx") TL().fx.vol = v;
+    else {
+      const l = this.laneDef(id), first = state.tracks[l.tracks[0]], ratio = first.vol > 0.001 ? v / first.vol : 0;
+      l.tracks.forEach((t, i) => { const s = state.tracks[t]; s.vol = i === 0 || ratio === 0 ? v : clamp(s.vol * ratio, 0, 1); const r = $("vol_" + t); if (r) r.value = s.vol; });
+    }
+    Mixer.apply();
+  },
+  moveLane(id, delta) {
+    const i = TL().lanes.indexOf(id), j = clamp(i + delta, 0, TL().lanes.length - 1);
+    if (i === j) return;
+    tlAction("Reorder lanes", (t) => { t.lanes.splice(i, 1); t.lanes.splice(j, 0, id); });
+  },
+  bindLaneDrag(grip, row, id) {
+    grip.style.touchAction = "none";
+    grip.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); grip.setPointerCapture(e.pointerId);
+      const sy = e.clientY, zy = TL().zoomY; let delta = 0;
+      row.classList.add("dragging");
+      const mv = (ev) => { delta = Math.round((ev.clientY - sy) / zy); row.style.transform = "translateY(" + (ev.clientY - sy) + "px)"; };
+      const up = () => { grip.removeEventListener("pointermove", mv); grip.removeEventListener("pointerup", up); grip.removeEventListener("pointercancel", up); row.style.transform = ""; row.classList.remove("dragging"); if (delta) this.moveLane(id, delta); };
+      grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", up); grip.addEventListener("pointercancel", up);
+    });
+  },
+  /** The clip library: section types + every generated pattern. Drag items onto lanes. */
+  renderLibrary() {
+    if (!this.ready) return;
+    const box = $("clipLibrary"), t = TL();
+    tlRt.libCount = Object.keys(t.library).length;
+    box.innerHTML = "";
+    TL_LIBRARY_SECTIONS.forEach((type) => {
+      const color = (SECTION_TYPES[type] || {}).color || (type === "fill" ? "#e0e0e0" : "#c77dff");
+      const item = el("div", { class: "lib-item sec", tabindex: "0", role: "button", title: "Drag onto a lane (or press Enter to add at the playhead)", "aria-label": "Section " + type + ". Press Enter to add at the playhead." });
+      const sw = el("i"); sw.style.background = color; item.append(sw, document.createTextNode(type));
+      const payload = () => ({ type: "lib", sec: type });
+      this.makeDraggable(item, payload, () => type);
+      item.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); this.addAtPlayhead(payload()); } });
+      box.appendChild(item);
+    });
+    const used = {}; t.clips.forEach((c) => c.patternId && (used[c.patternId] = (used[c.patternId] || 0) + 1));
+    const pats = Object.values(t.library).filter((p) => p.data).sort((a, b) => parseInt(b.id.slice(1), 10) - parseInt(a.id.slice(1), 10)).slice(0, TL_LIBRARY_MAX);
+    pats.forEach((p) => {
+      const g = GENRES[p.genre];
+      const label = TL_KIND_LABELS[p.kind] + " · " + (g ? g.name : "MIDI") + " · " + p.label + (used[p.id] ? " (" + used[p.id] + ")" : "");
+      const item = el("div", { class: "lib-item", tabindex: "0", role: "button", title: "Drag onto a " + TL_KIND_LABELS[p.kind] + " lane", "aria-label": label + ". Press Enter to add at the playhead." });
+      const sw = el("i"); sw.style.background = g ? "hsl(" + g.hue + ",60%,50%)" : "#999"; item.append(sw, document.createTextNode(label));
+      const payload = () => ({ type: "lib", pid: p.id });
+      this.makeDraggable(item, payload, () => label);
+      item.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); this.addAtPlayhead(payload()); } });
+      box.appendChild(item);
+    });
+    const cap = el("button", { title: "Add the current live patterns of every track to the library" }, "+ Capture live patterns");
+    cap.onclick = () => { TL_LANES.forEach((l) => l.id !== "fx" && this.libFromLive(l.id)); this.renderLibrary(); toast("Live patterns added to the library"); };
+    const clean = el("button", { title: "Remove patterns that no clip uses" }, "Remove unused");
+    clean.onclick = () => { let n = 0; Object.keys(t.library).forEach((id) => { if (!used[id] && t.library[id].data) { delete t.library[id]; n++; } }); tlRt.liveHash.clear(); this.renderLibrary(); toast("Removed " + n + " unused pattern(s)"); };
+    box.append(cap, clean);
+  },
+
+  /* ================= drag & drop from DOM sources (library, scenes) ================= */
+  /** Make a DOM element draggable onto the timeline (mouse + touch, 6px threshold). */
+  makeDraggable(elm, getPayload, getLabel) {
+    elm.style.touchAction = "none";
+    elm.addEventListener("pointerdown", (e) => {
+      if (e.button > 0) return;
+      const sx = e.clientX, sy = e.clientY;
+      const mv = (ev) => {
+        if (Math.hypot(ev.clientX - sx, ev.clientY - sy) < 6) return;
+        cleanup(); elm.dataset.dragged = "1";
+        this.startExtDrag(ev, getPayload(), getLabel(), elm);
+      };
+      const cleanup = () => { window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", cleanup); window.removeEventListener("pointercancel", cleanup); };
+      window.addEventListener("pointermove", mv); window.addEventListener("pointerup", cleanup); window.addEventListener("pointercancel", cleanup);
+    });
+  },
+  /** True (once) if the element was just dragged, so its click should be ignored. */
+  consumeDragClick(elm) { if (elm.dataset.dragged) { delete elm.dataset.dragged; return true; } return false; },
+  startExtDrag(e, payload, label, srcEl) {
+    const ghost = el("div", { class: "tl-ghost" }, label); document.body.appendChild(ghost);
+    let last = e;
+    const move = (ev) => { last = ev; ghost.style.left = ev.clientX + 12 + "px"; ghost.style.top = ev.clientY + 10 + "px"; tlRt.ext = this.extTarget(ev, payload); this.odirty = true; };
+    // auto-scroll the page while dragging near the top (below the sticky header) or bottom edge
+    const auto = setInterval(() => {
+      const topEdge = $("transport").getBoundingClientRect().bottom + 40;
+      const dy = last.clientY < topEdge ? -22 : last.clientY > innerHeight - 40 ? 22 : 0;
+      if (dy) { window.scrollBy(0, dy); tlRt.ext = this.extTarget(last, payload); this.odirty = true; }
+    }, 30);
+    const up = (ev) => {
+      clearInterval(auto);
+      window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up);
+      ghost.remove();
+      const tgt = ev.type === "pointercancel" ? null : this.extTarget(ev, payload);
+      tlRt.ext = null; this.odirty = true;
+      if (tgt && tgt.valid) this.dropExternal(payload, tgt);
+      else if (tgt) this.flashInvalid([tgt]);
+      setTimeout(() => srcEl && delete srcEl.dataset.dragged, 0);
+    };
+    move(e);
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  },
+  /** What would happen if the payload were dropped at this pointer position. */
+  extTarget(ev, payload) {
+    const r = $("tlOverlay").getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) return null;
+    if (ev.clientY < $("transport").getBoundingClientRect().bottom) return null; // hidden under the sticky header
+    const p = { x: ev.clientX - r.left, y: ev.clientY - r.top }, bar = this.barOf(p.x), region = this.regionAt(p.y);
+    if (payload.type === "scene") {
+      const b = Math.max(0, Math.round(bar));
+      return { kind: "marker", region, bar: b, laneId: null, start: b, length: 0.15, valid: region === "ruler" && !!Scenes.slots[payload.i] };
+    }
+    const laneId = region === "sec" ? "sec" : region === "lane" ? this.laneIdAtY(p.y) : null;
+    if (!laneId) return { laneId: null, valid: false, start: this.snapDown(bar), length: 1 };
+    return this.libTarget(payload, laneId, Math.max(0, this.snapDown(bar)));
+  },
+  /** Kind/length/validity of a library item placed on a lane at a bar. */
+  libTarget(payload, laneId, start) {
+    let kind, length;
+    if (payload.pid) { const p = this.lib(payload.pid); kind = p ? p.kind : null; length = TL_DEFAULT_BARS.clip; }
+    else {
+      const s = payload.sec;
+      if (laneId === "sec") { kind = s === "fill" || s === "riser" ? null : "section"; length = TL_DEFAULT_BARS.section; }
+      else if (s === "fill") { kind = "fill"; length = TL_DEFAULT_BARS.fill; }
+      else if (s === "riser") { kind = "riser"; length = TL_DEFAULT_BARS.riser; }
+      else { kind = laneId === "fx" ? null : this.laneDef(laneId).newKind; length = TL_DEFAULT_BARS.section; }
+    }
+    const next = TL().clips.filter((c) => c.lane === laneId && c.start >= start - 1e-6).reduce((m, c) => Math.min(m, c.start), Infinity);
+    if (payload.pid || payload.sec) length = r6(Math.min(length, next - start));
+    const valid = !!kind && this.compatible(kind, laneId) && length >= this.minLen() - 1e-6 && !this.overlaps(laneId, start, start + Math.max(length, this.minLen()));
+    return { laneId, start, length: Math.max(length, this.minLen()), kind, valid };
+  },
+  dropExternal(payload, tgt) {
+    if (payload.type === "scene") { this.addMarker(payload.i, tgt.bar); return; }
+    tlAction("Add clip from library", (t) => {
+      const c = { id: this.newId(), lane: tgt.laneId, start: tgt.start, length: tgt.length, offset: 0, gain: 1, lock: false };
+      if (tgt.laneId === "sec") c.type = payload.sec;
+      else if (payload.pid) c.patternId = payload.pid;
+      else {
+        const energy = this.energyAt(tgt.start, SECTION_TYPES[payload.sec] ? payload.sec : null);
+        c.patternId = this.generatePattern(tgt.kind, { bars: tgt.kind === "fill" ? 1 : ["riser", "revcym", "impact"].includes(tgt.kind) ? tgt.length : state.patternBars, energy, sectionType: SECTION_TYPES[payload.sec] ? payload.sec : null, tag: "lib" });
+      }
+      t.clips.push(c); tlRt.sel = new Set([c.id]);
+    });
+  },
+  /** Keyboard alternative to dragging a library item: add it at the playhead. */
+  addAtPlayhead(payload) {
+    const t = TL(), lanes = ["sec"].concat(t.lanes);
+    const pref = t.lanes[tlRt.focusLane];
+    const order = [pref].concat(lanes.filter((l) => l !== pref));
+    for (const laneId of order) {
+      let start = Math.max(0, this.snapDown(this.playhead()));
+      let tgt = this.libTarget(payload, laneId, start);
+      if (!tgt.kind || !this.compatible(tgt.kind, laneId)) continue;
+      if (!tgt.valid) { const endL = t.clips.filter((c) => c.lane === laneId).reduce((m, c) => Math.max(m, c.start + c.length), 0); tgt = this.libTarget(payload, laneId, Math.ceil(endL)); }
+      if (tgt.valid) { this.dropExternal(payload, tgt); toast("Added to " + this.laneDef(laneId).name); return; }
+    }
+    toast("No compatible free space for that item", true);
+  },
+  bindFileDrop() {
+    const wrap = $("pTimeline");
+    window.addEventListener("dragover", (e) => {
+      if (!e.dataTransfer || ![...e.dataTransfer.types].includes("Files")) return;
+      e.preventDefault(); wrap.classList.toggle("tl-drop-hover", !!(e.target.closest && e.target.closest("#pTimeline")));
+    });
+    window.addEventListener("dragleave", (e) => { if (!e.relatedTarget) wrap.classList.remove("tl-drop-hover"); });
+    window.addEventListener("drop", (e) => {
+      wrap.classList.remove("tl-drop-hover");
+      if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+      e.preventDefault();
+      const f = e.dataTransfer.files[0], name = f.name.toLowerCase();
+      if (name.endsWith(".json")) Presets.importJson(f);
+      else if (name.endsWith(".mid") || name.endsWith(".midi")) {
+        if (e.target.closest && e.target.closest("#pTimeline")) this.importMidiFile(f, e);
+        else toast("Drop .mid files onto the timeline panel", true);
+      } else toast("Only .json presets and .mid files can be dropped here", true);
+    });
+  },
+
+  /* ================= canvas interaction (mouse + touch via pointer events) ================= */
+  bindCanvas() {
+    const ov = $("tlOverlay");
+    ov.addEventListener("pointerdown", (e) => this.onDown(e));
+    ov.addEventListener("pointermove", (e) => this.onMove(e));
+    ov.addEventListener("pointerup", (e) => this.onUp(e));
+    ov.addEventListener("pointercancel", () => { tlRt.drag = null; this.odirty = true; });
+    ov.addEventListener("dblclick", (e) => this.onDbl(e));
+    ov.addEventListener("wheel", (e) => this.onWheel(e), { passive: false });
+    ov.addEventListener("keydown", (e) => this.onKey(e));
+    ov.addEventListener("contextmenu", (e) => e.preventDefault());
+    ov.addEventListener("focus", () => (this.odirty = true));
+    ov.addEventListener("blur", () => (this.odirty = true));
+  },
+  local(e) { const r = $("tlOverlay").getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; },
+  seek(bar) {
+    const b = Math.max(0, this.snap(bar));
+    tlRt.cursor = b;
+    if (state.playing && (TL().mode === "arrange" || tlRt.pendingMode === "arrange")) tlRt.jump = Math.floor(b + 1e-6);
+    this.odirty = true;
+  },
+  onDown(e) {
+    const ov = $("tlOverlay"); ov.focus({ preventScroll: true }); $("tlGenHere").hidden = true;
+    if (e.button === 2) return;
+    const p = this.local(e), region = this.regionAt(p.y), bar = this.barOf(p.x), t = TL();
+    ov.setPointerCapture(e.pointerId);
+    if (region === "ruler") {
+      const h = this.hitLoopHandle(p);
+      if (h) { tlRt.drag = { type: "loop", which: h, before: History.light() }; return; }
+      const m = this.hitMarker(p);
+      if (m >= 0) { tlRt.selMarker = m; tlRt.sel.clear(); tlRt.drag = { type: "marker", idx: m, before: History.light() }; this.dirty = true; return; }
+      this.seek(bar); tlRt.drag = { type: "seek" }; return;
+    }
+    if (region === "curve") {
+      const before = History.light(), pi = this.hitPoint(p);
+      tlRt.sel.clear(); tlRt.selMarker = -1;
+      if (pi >= 0) { tlRt.selPoint = pi; tlRt.drag = { type: "point", pt: t.energyCurve.points[pi], before }; }
+      else { const pt = { bar: Math.max(0, this.snap(bar)), v: this.valueOfY(p.y) }; t.energyCurve.points.push(pt); this.sortPoints(); tlRt.selPoint = t.energyCurve.points.indexOf(pt); tlRt.drag = { type: "point", pt, before }; }
+      this.dirty = true; return;
+    }
+    tlRt.selPoint = -1; tlRt.selMarker = -1;
+    const laneId = this.laneIdAtY(p.y); if (!laneId) return;
+    if (laneId !== "sec") tlRt.focusLane = t.lanes.indexOf(laneId);
+    const c = this.hitClip(laneId, bar);
+    if (c) {
+      const edge = this.edgeAt(c, p);
+      if (e.shiftKey && edge === "body") { if (tlRt.sel.has(c.id)) tlRt.sel.delete(c.id); else tlRt.sel.add(c.id); this.dirty = true; if (!tlRt.sel.has(c.id)) return; }
+      else if (!tlRt.sel.has(c.id)) tlRt.sel = new Set([c.id]);
+      const gains = {}; tlRt.sel.forEach((id) => { const x = this.clipById(id); if (x) gains[id] = x.gain ?? 1; });
+      tlRt.drag = { type: edge, id: c.id, ids: edge === "body" || edge === "top" ? [...tlRt.sel] : [c.id], startBar: bar, startX: p.x, startY: p.y, dup: e.altKey, moved: false, gains };
+      this.dirty = true; return;
+    }
+    if (!e.shiftKey) tlRt.sel.clear();
+    tlRt.drag = { type: "rect", x0: p.x, y0: p.y, x1: p.x, y1: p.y, laneId, bar, base: new Set(tlRt.sel) };
+    this.dirty = true;
+  },
+  onMove(e) {
+    const d = tlRt.drag, p = this.local(e);
+    if (!d) { this.hoverCursor(p); return; }
+    const bar = this.barOf(p.x), t = TL();
+    switch (d.type) {
+      case "seek": this.seek(bar); break;
+      case "loop": { const b = Math.max(0, Math.round(bar)); if (d.which === "start") t.loop.start = Math.min(b, t.loop.end - 1); else t.loop.end = Math.max(b, t.loop.start + 1); this.dirty = true; break; }
+      case "marker": t.markers[d.idx].bar = Math.max(0, Math.round(bar)); this.dirty = true; break;
+      case "point": { d.pt.bar = Math.max(0, this.snap(bar)); d.pt.v = this.valueOfY(p.y); this.sortPoints(); tlRt.selPoint = t.energyCurve.points.indexOf(d.pt); this.dirty = true; break; }
+      case "body": {
+        if (!d.moved && Math.abs(p.x - d.startX) + Math.abs(p.y - d.startY) < 4) break;
+        d.moved = true; d.dup = d.dup || e.altKey;
+        const anchor = this.clipById(d.id); if (!anchor) break;
+        const dBar = r6(Math.max(-anchor.start, this.snap(anchor.start + (bar - d.startBar)) - anchor.start));
+        const dLane = anchor.lane === "sec" ? 0 : Math.round((p.y - d.startY) / t.zoomY);
+        d.ghost = this.placeRaw(d.ids, dBar, dLane);
+        d.preview = this.validate(d.ghost.map((g) => ({ ...g })), d.dup);
+        break;
+      }
+      case "left": case "right": {
+        d.moved = true;
+        const n = this.resizeRaw(d.id, d.type, bar);
+        d.ghost = n ? [n] : []; d.preview = n && this.validate([{ ...n }], false);
+        break;
+      }
+      case "top": {
+        d.moved = true;
+        const delta = (d.startY - p.y) / 70;
+        d.ghost = d.ids.map((id) => this.clipById(id)).filter(Boolean).map((c) => ({ ...c, gain: Math.round(clamp(d.gains[c.id] + delta, 0.1, 1.5) * 100) / 100 }));
+        d.preview = d.ghost; this.toastGain = d.ghost[0] && d.ghost[0].gain;
+        break;
+      }
+      case "rect": {
+        d.x1 = p.x; d.y1 = p.y;
+        const xa = Math.min(d.x0, d.x1), xb = Math.max(d.x0, d.x1), ya = Math.min(d.y0, d.y1), yb = Math.max(d.y0, d.y1);
+        const sel = new Set(d.base);
+        t.clips.forEach((c) => { const x0 = this.xOf(c.start), x1 = this.xOf(c.start + c.length), y0 = this.laneY(c.lane), y1 = y0 + this.laneH(c.lane); if (x1 > xa && x0 < xb && y1 > ya && y0 < yb) sel.add(c.id); });
+        tlRt.sel = sel; this.dirty = true;
+        break;
+      }
+    }
+    this.odirty = true;
+  },
+  onUp(e) {
+    const d = tlRt.drag; tlRt.drag = null; if (!d) return;
+    const labels = { loop: "Move loop", marker: "Move scene marker", point: "Edit energy curve" };
+    switch (d.type) {
+      case "loop": case "marker": case "point": History.commit(labels[d.type], d.before); break;
+      case "body":
+        if (!d.moved) { if (!e.shiftKey && d.ids.length > 1) tlRt.sel = new Set([d.id]); break; }
+        if (d.preview) this.commitPlaced(d.preview, d.dup ? "Duplicate clips" : "Move clips", d.dup); else this.flashInvalid(d.ghost);
+        break;
+      case "left": case "right": if (d.preview) this.commitPlaced(d.preview, "Resize clip"); else if (d.moved) this.flashInvalid(d.ghost); break;
+      case "top": if (d.preview) { this.commitPlaced(d.preview, "Change intensity"); toast("Intensity " + Math.round(d.preview[0].gain * 100) + "%"); } break;
+      case "rect":
+        if (Math.abs(d.x1 - d.x0) < 4 && Math.abs(d.y1 - d.y0) < 4 && d.laneId && !e.shiftKey) this.showGenHere(d.laneId, d.bar, d.x0, d.y0);
+        break;
+    }
+    this.dirty = this.odirty = true;
+  },
+  onDbl(e) {
+    const p = this.local(e), region = this.regionAt(p.y), bar = this.barOf(p.x);
+    if (region === "curve") { const pi = this.hitPoint(p); if (pi >= 0) { tlAction("Delete energy point", (t) => t.energyCurve.points.splice(pi, 1)); tlRt.selPoint = -1; } return; }
+    if (region === "ruler") return;
+    const laneId = this.laneIdAtY(p.y); if (!laneId) return;
+    const c = this.hitClip(laneId, bar);
+    if (c) this.openDialog(c); else this.generateAt(laneId, bar);
+  },
+  onWheel(e) {
+    const t = TL(), p = this.local(e);
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (e.shiftKey) { t.zoomY = clamp(Math.round(t.zoomY * (e.deltaY < 0 ? 1.12 : 1 / 1.12)), TL_ZOOM.y[0], TL_ZOOM.y[1]); this.renderHeaders(); this.resize(); }
+      else { const anchor = this.barOf(p.x); t.zoomX = clamp(t.zoomX * (e.deltaY < 0 ? 1.15 : 1 / 1.15), TL_ZOOM.x[0], TL_ZOOM.x[1]); tlRt.scroll = Math.max(0, anchor - p.x / t.zoomX); this.syncScroll(); }
+      return;
+    }
+    if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      e.preventDefault();
+      tlRt.scroll += (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) / t.zoomX;
+      this.syncScroll();
+    }
+  },
+  hoverCursor(p) {
+    const ov = $("tlOverlay"), region = this.regionAt(p.y);
+    let cur = "default";
+    if (region === "ruler") cur = this.hitLoopHandle(p) ? "ew-resize" : this.hitMarker(p) >= 0 ? "grab" : "pointer";
+    else if (region === "curve") cur = this.hitPoint(p) >= 0 ? "grab" : "copy";
+    else { const id = this.laneIdAtY(p.y), c = id && this.hitClip(id, this.barOf(p.x)); if (c) { const ed = this.edgeAt(c, p); cur = ed === "body" ? "grab" : ed === "top" ? "ns-resize" : "ew-resize"; } else cur = "crosshair"; }
+    ov.style.cursor = cur;
+  },
+  showGenHere(laneId, bar, x, y) {
+    const b = $("tlGenHere"); tlRt.genHere = { laneId, bar };
+    b.hidden = false; b.style.left = Math.min(x, ($("tlOverlay").clientWidth || 400) - 150) + "px"; b.style.top = Math.max(0, y - 12) + "px";
+  },
+  /** Keyboard control of the timeline (the canvas must be focused). */
+  onKey(e) {
+    const t = TL(), k = e.key, sel = [...tlRt.sel], unit = this.snapUnit() || 1 / stepsPerBar();
+    const ctrl = e.ctrlKey || e.metaKey;
+    let handled = true;
+    if (ctrl && (k === "d" || k === "D")) this.duplicateSel();
+    else if (ctrl || e.altKey) handled = false;
+    else if (k === "Delete" || k === "Backspace") this.deleteSel();
+    else if (k === "Enter") { const c = this.clipById(sel[0]); if (c) this.openDialog(c); else this.generateAt(t.lanes[tlRt.focusLane], this.playhead()); }
+    else if (k === "Escape") { tlRt.sel.clear(); tlRt.selPoint = -1; tlRt.selMarker = -1; $("tlGenHere").hidden = true; }
+    else if (k.startsWith("Arrow")) {
+      const horiz = k === "ArrowLeft" || k === "ArrowRight", dir = k === "ArrowLeft" || k === "ArrowUp" ? -1 : 1;
+      if (!sel.length && tlRt.selPoint >= 0) {
+        const pt = t.energyCurve.points[tlRt.selPoint];
+        if (pt) tlAction("Edit energy curve", () => { if (horiz) pt.bar = Math.max(0, r6(pt.bar + dir * Math.max(unit, 0.25))); else pt.v = clamp(pt.v - dir * 5, 0, 100); this.sortPoints(); tlRt.selPoint = t.energyCurve.points.indexOf(pt); });
+      } else if (sel.length && horiz && e.shiftKey) {
+        const res = sel.map((id) => { const c = this.clipById(id); return c ? this.resizeRaw(id, "right", c.start + c.length + dir * unit) : null; });
+        const ok = res.every(Boolean) && this.validate(res.map((r) => ({ ...r })), false);
+        if (ok) this.commitPlaced(res, "Resize clips"); else this.flashInvalid(res);
+      } else if (sel.length) {
+        const placed = this.placeRaw(sel, horiz ? dir * unit : 0, horiz ? 0 : dir);
+        const ok = this.validate(placed.map((p) => ({ ...p })), false);
+        if (ok) this.commitPlaced(placed, "Move clips"); else this.flashInvalid(placed);
+      } else if (horiz) this.seek(this.playhead() + dir * Math.max(unit, 0.25));
+      else tlRt.focusLane = clamp(tlRt.focusLane + dir, 0, t.lanes.length - 1);
+    } else if (k === "," || k === ".") {
+      const order = t.clips.slice().sort((a, b) => a.start - b.start || this.laneY(a.lane) - this.laneY(b.lane));
+      if (order.length) { let i = order.findIndex((c) => c.id === sel[sel.length - 1]); i = i < 0 ? 0 : mod(i + (k === "." ? 1 : -1), order.length); tlRt.sel = new Set([order[i].id]); this.scrollTo(order[i].start); }
+    }
+    else if (k === "s" || k === "S") this.split();
+    else if (k === "j" || k === "J") this.merge();
+    else if (k === "g" || k === "G") this.generateAt(t.lanes[tlRt.focusLane], this.playhead());
+    else if (k === "l" || k === "L") this.toggleLoop();
+    else if (k === "[") this.setLoopPoint("start", this.playhead());
+    else if (k === "]") this.setLoopPoint("end", this.playhead());
+    else if (k === "e" || k === "E") this.addPoint(this.playhead(), rt.energyEff || state.params.energy);
+    else if (/^[1-8]$/.test(k)) this.addMarker(+k - 1, this.playhead());
+    else handled = false;
+    if (handled) { e.preventDefault(); e.stopPropagation(); this.dirty = this.odirty = true; }
+  },
+  scrollTo(bar) { const vis = ($("tlOverlay").clientWidth || 800) / TL().zoomX; if (bar < tlRt.scroll || bar > tlRt.scroll + vis - 1) { tlRt.scroll = Math.max(0, bar - 2); this.syncScroll(); } },
+
+  /* ================= clip settings dialog ================= */
+  bindDialog() {
+    const sel = $("clipType"); Object.keys(SECTION_TYPES).forEach((s) => sel.appendChild(el("option", { value: s }, s)));
+    $("clipGain").oninput = (e) => ($("clipGainOut").textContent = e.target.value + "%");
+    $("clipClose").onclick = () => this.closeDialog();
+    $("clipApply").onclick = () => this.applyDialog();
+    $("clipDel").onclick = () => { tlRt.sel = new Set([this.dialogClip]); this.deleteSel(); this.closeDialog(); };
+    $("clipRegen").onclick = () => { this.regenerateClips([this.dialogClip]); this.fillDialog(); };
+    $("clipUnique").onclick = () => {
+      const c = this.clipById(this.dialogClip), p = c && this.lib(c.patternId); if (!p || !p.data) return;
+      tlAction("Make clip unique", (t) => { const id = this.newId("p"); t.library[id] = deepCopy(p); t.library[id].id = id; t.library[id].label = p.label + " copy"; t.clips = t.clips.map((x) => (x.id === c.id ? { ...x, patternId: id } : x)); });
+      this.fillDialog(); toast("The clip now has its own copy of the pattern");
+    };
+    $("clipEdit").onclick = () => { const c = this.clipById(this.dialogClip); if (c) { this.closeDialog(); UI.editClipPattern(c.patternId); } };
+    $("clipDialog").addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); this.closeDialog(); } });
+  },
+  openDialog(c) { this.dialogClip = c.id; this.fillDialog(); $("clipDialog").hidden = false; setTimeout(() => (c.lane === "sec" ? $("clipType") : $("clipName")).focus(), 0); },
+  fillDialog() {
+    const c = this.clipById(this.dialogClip); if (!c) { this.closeDialog(); return; }
+    const p = this.lib(c.patternId), isSec = c.lane === "sec";
+    const uses = TL().clips.filter((x) => x.patternId && x.patternId === c.patternId).length;
+    $("clipInfo").textContent = isSec ? "Section clip on the Sections lane." :
+      this.laneDef(c.lane).name + " lane · " + (p ? TL_KIND_LABELS[p.kind] + (p.genre && GENRES[p.genre] ? " · " + GENRES[p.genre].name : "") + " · pattern " + p.id + " (" + p.bars + " bar" + (p.bars > 1 ? "s" : "") + ", used by " + uses + " clip" + (uses > 1 ? "s" : "") + ")" + (p.abs ? " · imported MIDI notes (shown in the tracker view)" : "") : "");
+    $("clipNameWrap").hidden = isSec; $("clipTypeWrap").hidden = !isSec;
+    if (isSec) $("clipType").value = c.type; else $("clipName").value = p ? p.label : "";
+    $("clipStart").value = r6(c.start + 1); $("clipLen").value = c.length;
+    $("clipGain").value = Math.round((c.gain ?? 1) * 100); $("clipGainOut").textContent = $("clipGain").value + "%";
+    $("clipLock").checked = !!c.lock;
+    ["clipRegen", "clipUnique", "clipEdit"].forEach((id) => ($(id).disabled = isSec || !p || !p.data));
+    $("clipGain").disabled = isSec;
+  },
+  applyDialog() {
+    const c = this.clipById(this.dialogClip); if (!c) return;
+    const n = { ...c, start: r6(Math.max(0, (parseFloat($("clipStart").value) || 1) - 1)), length: r6(Math.max(this.minLen(), parseFloat($("clipLen").value) || c.length)), gain: (+$("clipGain").value) / 100, lock: $("clipLock").checked };
+    if (c.lane === "sec") n.type = $("clipType").value;
+    if (!this.validate([{ ...n }], false)) { toast("That position overlaps another clip", true); return; }
+    const p = this.lib(c.patternId), name = $("clipName").value.trim();
+    if (p && name && name !== p.label) { p.label = name; this.renderLibrary(); }
+    this.commitPlaced([n], "Edit clip");
+    this.closeDialog();
+  },
+  closeDialog() { $("clipDialog").hidden = true; this.dialogClip = null; $("tlOverlay").focus({ preventScroll: true }); },
+
+  /* ================= drawing ================= */
+  themeChanged() {
+    const css = getComputedStyle(document.body), g = (n) => css.getPropertyValue(n).trim();
+    this.colors = { text: g("--text"), muted: g("--muted"), accent: g("--accent"), accent2: g("--accent2"), cell: g("--cell"), panel: g("--panel"), border: g("--panel-border"), bg: g("--bg"), good: g("--good") || "#59d98e" };
+    this.dirty = this.odirty = true;
+  },
+  resize() {
+    if (!this.ready) return;
+    const wrap = $("tlCanvasWrap"), t = TL();
+    const w = wrap.clientWidth || 800, h = this.lanesTop() + t.lanes.length * t.zoomY;
+    this.dpr = settings.quality === "low" ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    wrap.style.height = h + "px";
+    ["tlCanvas", "tlOverlay"].forEach((id) => { const c = $(id); c.width = Math.floor(w * this.dpr); c.height = Math.floor(h * this.dpr); c.style.height = h + "px"; });
+    this.syncScroll();
+  },
+  clipColor(c) {
+    if (c.lane === "sec") return (SECTION_TYPES[c.type] || {}).color || "#888";
+    const p = this.lib(c.patternId);
+    if (!p) return "#777";
+    if (c.lane === "fx" || ["riser", "revcym", "impact"].includes(p.kind)) return "#c77dff";
+    if (p.kind === "fill") return "#d0d0d0";
+    const g = GENRES[p.genre];
+    if (!g) return "#8a8a8a";
+    return settings.theme === "retro" ? "hsl(" + g.hue + ",100%,60%)" : "hsl(" + g.hue + ",58%," + (settings.theme === "visual" ? 55 : 44) + "%)";
+  },
+  clipLabel(c, w) {
+    if (c.lane === "sec") return c.type.toUpperCase();
+    const p = this.lib(c.patternId); if (!p) return "?";
+    if (settings.theme === "retro") return (c.lane.slice(0, 3).toUpperCase()) + " " + p.id.toUpperCase() + " " + (GENRES[p.genre] ? GENRES[p.genre].name.slice(0, 3).toUpperCase() : "MID") + (w > 140 ? " " + p.label.toUpperCase() : "");
+    const gl = GENRES[p.genre] ? GENRES[p.genre].name : p.kind === "fill" ? "Fill" : p.data ? "MIDI" : "FX";
+    return (w > 90 ? gl + " · " : "") + p.label;
+  },
+  /** Redraw the clip layer (only when something changed). */
+  drawContent() {
+    const cv = $("tlCanvas"), g = cv.getContext("2d"), dpr = this.dpr, W = cv.width / dpr, H = cv.height / dpr, t = TL(), C = this.colors, G = TL_GEOMETRY;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const zx = t.zoomX, top = this.lanesTop(), retro = settings.theme === "retro";
+    const beats = (TIME_SIGNATURES[state.timeSig] || { beats: 4 }).beats;
+    const b0 = Math.max(0, Math.floor(tlRt.scroll)), b1 = Math.ceil(this.barOf(W));
+    // lane backgrounds
+    g.fillStyle = C.cell; g.fillRect(0, 0, W, G.ruler);
+    g.fillStyle = "rgba(128,128,128,0.06)"; g.fillRect(0, G.ruler, W, G.curve);
+    g.fillStyle = "rgba(128,128,128,0.12)"; g.fillRect(0, G.ruler + G.curve, W, G.sec);
+    t.lanes.forEach((id, i) => {
+      const y = top + i * t.zoomY;
+      g.fillStyle = i % 2 ? "rgba(128,128,128,0.05)" : "rgba(0,0,0,0)"; g.fillRect(0, y, W, t.zoomY);
+      if (i === tlRt.focusLane && document.activeElement === $("tlOverlay")) { g.fillStyle = "rgba(128,128,255,0.07)"; g.fillRect(0, y, W, t.zoomY); }
+      if (this.laneLocked(id)) { g.save(); g.strokeStyle = "rgba(128,128,128,0.18)"; g.beginPath(); for (let x = -t.zoomY; x < W; x += 12) { g.moveTo(x, y + t.zoomY); g.lineTo(x + t.zoomY, y); } g.stroke(); g.restore(); }
+      g.fillStyle = C.border; g.fillRect(0, y + t.zoomY - 1, W, 1);
+    });
+    // loop region
+    if (t.loop.on) { g.fillStyle = "rgba(255,200,80,0.08)"; g.fillRect(this.xOf(t.loop.start), G.ruler, (t.loop.end - t.loop.start) * zx, H - G.ruler); }
+    // grid + ruler numbers
+    g.font = (retro ? "10px monospace" : "10px sans-serif"); g.textBaseline = "alphabetic";
+    for (let b = b0; b <= b1; b++) {
+      const x = Math.round(this.xOf(b)) + 0.5;
+      g.fillStyle = b % 4 === 0 ? "rgba(128,128,128,0.35)" : "rgba(128,128,128,0.16)"; g.fillRect(x, G.ruler, 1, H - G.ruler);
+      if (zx >= 60) for (let k = 1; k < beats; k++) { g.fillStyle = "rgba(128,128,128,0.08)"; g.fillRect(x + (k * zx) / beats, G.ruler + G.curve, 1, H - G.ruler - G.curve); }
+      g.fillStyle = C.muted; g.fillRect(x, b % 4 === 0 ? 14 : 19, 1, G.ruler - (b % 4 === 0 ? 14 : 19));
+      if (zx >= 24 || b % 4 === 0) { g.fillStyle = b % 4 === 0 ? C.text : C.muted; g.fillText(retro ? String(b + 1).padStart(3, "0") : String(b + 1), x + 3, 23); }
+    }
+    // loop handles
+    [["start", t.loop.start], ["end", t.loop.end]].forEach(([w, b]) => {
+      const x = this.xOf(b); g.fillStyle = t.loop.on ? "#ffc857" : "rgba(255,200,87,0.35)";
+      g.beginPath(); g.moveTo(x, 12); g.lineTo(x + (w === "start" ? 7 : -7), 12); g.lineTo(x, 22); g.closePath(); g.fill();
+    });
+    if (t.loop.on) { g.fillStyle = "rgba(255,200,87,0.6)"; g.fillRect(this.xOf(t.loop.start), 12, (t.loop.end - t.loop.start) * zx, 2); }
+    // scene markers
+    t.markers.forEach((m, i) => {
+      const x = this.xOf(m.bar); if (x < -20 || x > W) return;
+      g.fillStyle = i === tlRt.selMarker ? C.accent2 : C.good; g.fillRect(x, 0, 2, G.ruler);
+      g.fillRect(x, 0, 18, 11); g.fillStyle = "#000"; g.font = "bold 9px sans-serif"; g.fillText("S" + (m.scene + 1), x + 3, 9);
+      g.font = (retro ? "10px monospace" : "10px sans-serif");
+    });
+    // energy curve
+    const pts = t.energyCurve.points;
+    g.fillStyle = C.muted; g.fillText("energy" + (t.energyCurve.on ? "" : " (off)"), 4, G.ruler + 12);
+    if (pts.length) {
+      g.strokeStyle = t.energyCurve.on ? C.accent2 : "rgba(128,128,128,0.5)"; g.lineWidth = 2; g.beginPath();
+      g.moveTo(0, this.yOfValue(this.curveValue(this.barOf(0))));
+      pts.forEach((pt) => g.lineTo(this.xOf(pt.bar), this.yOfValue(pt.v)));
+      g.lineTo(W, this.yOfValue(this.curveValue(this.barOf(W)))); g.stroke();
+      pts.forEach((pt, i) => { g.fillStyle = i === tlRt.selPoint ? C.text : (t.energyCurve.on ? C.accent2 : C.muted); g.beginPath(); g.arc(this.xOf(pt.bar), this.yOfValue(pt.v), i === tlRt.selPoint ? 5 : 4, 0, Math.PI * 2); g.fill(); });
+    }
+    // clips
+    t.clips.forEach((c) => { if (c.start + c.length < tlRt.scroll - 0.01 || c.start > b1) return; if (c.lane !== "sec" && t.lanes.indexOf(c.lane) < 0) return; this.drawClip(g, c); });
+  },
+  drawClip(g, c) {
+    const t = TL(), C = this.colors, y = this.laneY(c.lane) + 1, h = this.laneH(c.lane) - 3;
+    const x = this.xOf(c.start), w = Math.max(3, c.length * t.zoomX - 1);
+    const sel = tlRt.sel.has(c.id), col = this.clipColor(c), retro = settings.theme === "retro";
+    const glow = settings.theme === "visual" && settings.quality !== "low";
+    g.save();
+    if (glow) { g.shadowColor = col; g.shadowBlur = 4 + tlRt.level * 28; }
+    if (retro) {
+      g.fillStyle = "rgba(0,0,0,0.6)"; g.fillRect(x, y, w, h);
+      g.strokeStyle = col; g.lineWidth = 1.5; g.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+      g.fillStyle = col; for (let b = 1; b < c.length; b++) g.fillRect(x + b * t.zoomX, y + 2, 1, h - 4);
+    } else {
+      g.globalAlpha = c.lane === "sec" ? 0.9 : 0.88; g.fillStyle = col;
+      g.beginPath(); if (g.roundRect) g.roundRect(x, y, w, h, 4); else g.rect(x, y, w, h); g.fill(); g.globalAlpha = 1;
+    }
+    g.shadowBlur = 0;
+    if (sel) { g.strokeStyle = C.text; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, w - 2, h - 2); }
+    g.beginPath(); g.rect(x, y, w, h); g.clip();
+    if (c.lane !== "sec" && c.lane !== "fx" && h > 10) { g.fillStyle = retro ? col : "rgba(255,255,255,0.75)"; g.fillRect(x + 2, y + 1, Math.max(2, (w - 4) * clamp((c.gain ?? 1) / 1.5, 0, 1)), 3); }
+    g.fillStyle = retro ? col : c.lane === "sec" ? "#000" : "#fff";
+    g.font = retro ? "10px monospace" : (c.lane === "sec" ? "bold 9px sans-serif" : "10px sans-serif");
+    g.fillText((c.lock ? "■ " : "") + this.clipLabel(c, w), x + 4, y + (c.lane === "sec" ? 11 : 14));
+    if (c.lane !== "sec" && h > 24 && w > 20) this.drawClipPreview(g, c, x, y + 17, w, h - 19, retro ? col : "rgba(255,255,255,0.8)");
+    g.restore();
+  },
+  /** Tiny picture of the pattern inside a clip (drum hits or note bars). */
+  drawClipPreview(g, c, x, y, w, h, col) {
+    const p = this.lib(c.patternId); if (!p || !p.data || h < 6) return;
+    const spb = stepsPerBar(), stepW = TL().zoomX / spb, L = this.patLen(p); if (!L) return;
+    const steps = Math.min(Math.round(c.length * spb), Math.ceil(w / Math.max(0.5, stepW)), 4096), off = Math.round((c.offset || 0) * spb);
+    g.fillStyle = col;
+    if (p.kind === "drum" || p.kind === "fill") {
+      const rows = [["kick"], ["snare", "clap"], ["hat", "ohat"]], rh = h / 3;
+      for (let s = 0; s < steps; s++) {
+        const li = mod(s + off, L);
+        rows.forEach((lanes, r) => { const v = Math.max(...lanes.map((l) => (p.data[l] || [])[li] || 0)); if (v > 0) g.fillRect(x + s * stepW, y + r * rh + rh * 0.2, Math.max(1, stepW - 1), Math.max(1, rh * 0.6 * v)); });
+      }
+      return;
+    }
+    let lo = Infinity, hi = -Infinity;
+    p.data.forEach((st) => { if (!st) return; const vals = st.ms ? st.ms : [st.m !== undefined ? st.m : st.d]; vals.forEach((v) => { lo = Math.min(lo, v); hi = Math.max(hi, v); }); });
+    if (lo === Infinity) return;
+    const span = Math.max(1, hi - lo);
+    for (let s = 0; s < steps; s++) {
+      const st = p.data[mod(s + off, L)]; if (!st) continue;
+      const vals = st.ms ? st.ms : [st.m !== undefined ? st.m : st.d];
+      vals.forEach((v) => g.fillRect(x + s * stepW, y + (1 - (v - lo) / span) * (h - 2), Math.max(1.5, st.l * stepW - 1), 2));
+    }
+  },
+  /** Redraw the light top layer: playhead, drag ghosts, selection rectangle. */
+  drawOverlay() {
+    const cv = $("tlOverlay"), g = cv.getContext("2d"), dpr = this.dpr, W = cv.width / dpr, H = cv.height / dpr, C = this.colors, t = TL();
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    const ghost = (list, valid) => (list || []).forEach((c) => {
+      if (!c) return;
+      const y = (c.lane ? this.laneY(c.lane) : this.lanesTop()) + 1, h = (c.lane ? this.laneH(c.lane) : t.zoomY) - 3, x = this.xOf(c.start), w = Math.max(3, c.length * t.zoomX - 1);
+      g.fillStyle = valid ? "rgba(89,217,142,0.22)" : "rgba(255,77,77,0.22)"; g.fillRect(x, y, w, h);
+      g.strokeStyle = valid ? "#59d98e" : "#ff4d4d"; g.lineWidth = 2; g.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    });
+    const d = tlRt.drag;
+    if (d && d.ghost && d.moved) {
+      ghost(d.ghost, !!d.preview);
+      const sx = this.xOf(d.ghost[0] ? (d.type === "right" ? d.ghost[0].start + d.ghost[0].length : d.ghost[0].start) : 0);
+      g.setLineDash([4, 3]); g.strokeStyle = C.accent2; g.lineWidth = 1; g.beginPath(); g.moveTo(sx, 0); g.lineTo(sx, H); g.stroke(); g.setLineDash([]);
+    }
+    if (d && d.type === "rect") { g.fillStyle = "rgba(120,160,255,0.12)"; g.strokeStyle = C.accent; g.lineWidth = 1; const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1); g.fillRect(x, y, Math.abs(d.x1 - d.x0), Math.abs(d.y1 - d.y0)); g.strokeRect(x + 0.5, y + 0.5, Math.abs(d.x1 - d.x0), Math.abs(d.y1 - d.y0)); }
+    const ext = tlRt.ext;
+    if (ext) {
+      if (ext.kind === "marker") { const x = this.xOf(ext.bar); g.fillStyle = ext.valid ? "#59d98e" : "#ff4d4d"; g.fillRect(x, 0, 3, H); }
+      else if (ext.laneId) ghost([{ lane: ext.laneId, start: ext.start, length: ext.length }], ext.valid);
+      if (ext.laneId || ext.kind === "marker") { const sx = this.xOf(ext.start); g.setLineDash([4, 3]); g.strokeStyle = C.accent2; g.beginPath(); g.moveTo(sx, 0); g.lineTo(sx, H); g.stroke(); g.setLineDash([]); }
+    }
+    if (tlRt.flash) { if (performance.now() > tlRt.flash.until) tlRt.flash = null; else ghost(tlRt.flash.rects.map((r) => r && ({ lane: r.laneId || r.lane, start: r.start, length: r.length })).filter((r) => r && r.lane), false); }
+    // cursor (where play starts / jump target) and playhead
+    const cx = this.xOf(tlRt.cursor);
+    g.fillStyle = C.muted; g.fillRect(cx, 0, 1, H);
+    if (tlRt.playPos != null) {
+      const px = this.xOf(tlRt.playPos);
+      g.fillStyle = C.accent2; g.fillRect(px - 1, 0, 2, H);
+      g.beginPath(); g.moveTo(px - 6, 0); g.lineTo(px + 6, 0); g.lineTo(px, 8); g.closePath(); g.fill();
+    } else { g.fillStyle = C.text; g.beginPath(); g.moveTo(cx - 5, 0); g.lineTo(cx + 5, 0); g.lineTo(cx, 7); g.closePath(); g.fill(); }
+    if (tlRt.rec) { g.fillStyle = "#ff4d4d"; g.font = "bold 10px sans-serif"; g.fillText("● REC", W - 46, 11); }
+    const mode = tlRt.pendingMode || t.mode;
+    g.fillStyle = mode === "arrange" ? C.accent : C.muted; g.font = "bold 10px sans-serif"; g.fillText(mode.toUpperCase(), W - (tlRt.rec ? 110 : 60), 11);
+  },
+  /** Called every animation frame by UI.frame. Redraws only what changed. */
+  frame() {
+    if (!this.ready) return;
+    const playing = state.playing;
+    // follow the playhead
+    // (only while the playhead is on screen, so scrolling away to edit is never interrupted)
+    if (playing && tlRt.playPos != null && !tlRt.drag && !tlRt.ext) {
+      const vis = ($("tlOverlay").clientWidth || 800) / TL().zoomX, pp = tlRt.playPos;
+      const inView = pp >= tlRt.scroll && pp <= tlRt.scroll + vis * 0.92;
+      if (!inView && tlRt.followed && Math.abs(pp - (tlRt.lastPP ?? pp)) < 2) { tlRt.scroll = Math.max(0, Math.floor(pp) - 1); this.syncScroll(); }
+      else if (!inView && tlRt.followed && pp < (tlRt.lastPP ?? pp)) { tlRt.scroll = Math.max(0, Math.floor(pp) - 1); this.syncScroll(); }
+      tlRt.followed = pp >= tlRt.scroll && pp <= tlRt.scroll + vis * 0.92;
+      tlRt.lastPP = pp;
+    } else if (!playing) { tlRt.followed = true; tlRt.lastPP = null; }
+    // Visual Show: glowing clips pulse with the analyser (disabled on Low quality)
+    if (settings.theme === "visual" && settings.quality !== "low" && playing && rt.ctx && (UI.frameNo % 2 === 0)) {
+      const an = rt.nodes.analyser, buf = this.lvlBuf || (this.lvlBuf = new Float32Array(256));
+      an.getFloatTimeDomainData(buf); let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
+      tlRt.level = Math.min(1, Math.sqrt(s / buf.length) * 3); this.dirty = true;
+    }
+    if (this.dirty) { this.dirty = false; this.drawContent(); }
+    if (this.odirty || playing || tlRt.flash) { this.odirty = false; this.drawOverlay(); }
+  }
+};
+
+/** ARRANGE mode scheduler step: plays whatever the timeline says (via the bar plan). */
+function scheduleTimelineStep(time) {
+  const spb = stepsPerBar(), sd = stepDuration();
+  if (rt.stepInBar === 0) Timeline.onBarStart(time);
+  const bar = tlRt.bar;
+  rt.uiQueue.push({ time, step: -1, bar, stepInBar: rt.stepInBar, tl: true });
+  if (tlRt.render && tlRt.render.done) return;
+  const pos = bar * spb + rt.stepInBar, t = time + swingOffset(rt.stepInBar, sd);
+  const energy = Arr.energy(); rt.energyEff = energy;
+  const thr = hitThreshold(energy), thrMel = thr * 0.6;
+  const ev = Timeline.eventsAt(pos, tlRt.plan);
+  let snareV = 0;
+  ev.drums.forEach((d) => { if (d.v >= Math.min(thr, 0.95)) { triggerDrum(d.lane, t, Math.min(1, d.v), d.pIdx); if (d.lane === "snare") snareV = d.v; } });
+  // build sections get a snare roll in their last two bars (only if the drums lane is playing)
+  const sec = Arr.current(), st = Arr.type();
+  if (st.roll && sec.bars && rt.secBar >= sec.bars - 2 && tlRt.plan.drums && tlRt.plan.drums.length) {
+    const lastBar = rt.secBar === sec.bars - 1;
+    if (lastBar || rt.stepInBar % 2 === 0) { const v = 0.45 + 0.55 * (rt.stepInBar / spb) * (lastBar ? 1 : 0.7); if (v > snareV) triggerDrum("snare", t, v, 0); }
+  }
+  const bright = Math.pow(2, (state.params.brightness - 50) / 50 * 1.2) * (0.75 + energy / 100 * 0.5);
+  ev.mel.forEach(({ track, step }) => {
+    if (step.v < thrMel) return;
+    const inst = rt.song.instruments[track], dur = Math.max(0.03, step.l * sd * 0.92);
+    notesForStep(track, step, rt.chord).forEach((nt) => INSTRUMENTS[inst].trigger(t, nt.midi, nt.vel, { dest: rt.channels[track].input, dur, bright, priority: track === "bass" ? "high" : "low", vowelSeed: pos }));
+  });
+  ev.fx.forEach((f) => Timeline.triggerFx(f, t));
+}
+
+/** MIDI export of the timeline (ARRANGE mode): same events as playback. */
+MidiFile.buildTimeline = function () {
+  if (!rt.song) resolveSong();
+  const PPQ = 480, TPS = PPQ / 4, spb = stepsPerBar(), t = TL();
+  const endBar = t.loop.on ? t.loop.end : Timeline.end(), startBar = t.loop.on ? t.loop.start : 0;
+  const tracks = {}; TRACKS.forEach((tr) => (tracks[tr.id] = []));
+  for (let bar = startBar; bar < endBar; bar++) {
+    const sc = t.clips.find((c) => c.lane === "sec" && c.start <= bar + 1e-6 && c.start + c.length > bar + 1e-6);
+    const chord = chordForBar(bar);
+    for (let s = 0; s < spb; s++) {
+      const pos = bar * spb + s, tick = (pos - startBar * spb) * TPS;
+      const energy = t.energyCurve.on && t.energyCurve.points.length ? clamp(Timeline.curveValue(bar + s / spb), 0, 100) : clamp(state.params.energy + (sc ? (SECTION_TYPES[sc.type] || {}).energy || 0 : 0), 0, 100);
+      const thr = hitThreshold(energy), ev = Timeline.eventsAt(pos, null);
+      ev.drums.forEach((d) => {
+        if (d.v < Math.min(thr, 0.95)) return;
+        const inst = rt.song.instruments[d.lane], tr = TRACKS.find((x) => x.id === d.lane);
+        const note = d.lane === "kick" ? 36 : DRUM_KITS[inst] || tr.gmNote, vel = clamp(Math.round(Math.min(1, d.v) * 120), 1, 127);
+        tracks[d.lane].push({ tick, order: 1, data: [0x99, note, vel] }, { tick: tick + TPS / 2, order: 0, data: [0x89, note, 0] });
+      });
+      ev.mel.forEach(({ track, step }) => {
+        if (step.v < thr * 0.6) return;
+        const ch = TRACKS.find((x) => x.id === track).channel;
+        notesForStep(track, step, chord).forEach((nt) => {
+          const m = clamp(nt.midi, 0, 127), vel = clamp(Math.round(nt.vel * 115), 1, 127);
+          tracks[track].push({ tick, order: 1, data: [0x90 | ch, m, vel] }, { tick: tick + Math.max(1, Math.round(step.l * TPS * 0.92)), order: 0, data: [0x80 | ch, m, 0] });
+        });
+      });
+    }
+  }
+  return this.assemble(tracks);
+};
 
 /* =======================================================================
    J. UI MODULE + THEMES + VISUALS
@@ -2991,7 +4554,9 @@ const UI = {
     // --- performance + scenes ---
     PERF_ACTIONS.forEach((a) => $("perfButtons").appendChild(el("button", { id: "perf_" + a.id, onclick: () => performAction(a.id) }, a.label)));
     for (let i = 0; i < 8; i++) {
-      $("scenes").appendChild(el("button", { id: "scene_" + i, title: "Scene " + (i + 1) + " (key " + (i + 1) + ")", onclick: (e) => Scenes.trigger(i, e.shiftKey) }, String(i + 1)));
+      const sb = el("button", { id: "scene_" + i, title: "Scene " + (i + 1) + " (key " + (i + 1) + "). Drag onto the timeline ruler to place a scene marker.", onclick: (e) => { if (Timeline.consumeDragClick(sb)) return; Scenes.trigger(i, e.shiftKey); } }, String(i + 1));
+      Timeline.makeDraggable(sb, () => ({ type: "scene", i }), () => "Scene " + (i + 1));
+      $("scenes").appendChild(sb);
     }
     $("btnPiano").onclick = () => this.setPiano(!rt.pianoOn);
     $("btnOctDown").onclick = () => this.setOctave(rt.octave - 1);
@@ -3005,10 +4570,11 @@ const UI = {
     // --- sequencer ---
     const tabs = $("trackTabs");
     [{ id: "drums", name: "Drums (all)" }].concat(TRACKS.filter((t) => t.kind !== "drum")).forEach((t) => {
-      tabs.appendChild(el("button", { role: "tab", id: "tab_" + t.id, onclick: () => { this.selTrack = t.id; this.cursor = { r: 0, c: 0 }; this.renderSeq(); } }, t.name));
+      tabs.appendChild(el("button", { role: "tab", id: "tab_" + t.id, onclick: () => { this.editPattern = null; this.selTrack = t.id; this.cursor = { r: 0, c: 0 }; this.renderSeq(); } }, t.name));
     });
     $("patLen").onchange = (e) => { state.patternBars = +e.target.value; TRACKS.forEach((t) => resizePattern(t.id)); this.renderSeq(); };
     $("seqView").onchange = () => this.renderSeq();
+    $("btnSeqBack").onclick = () => { this.editPattern = null; this.renderSeq(); };
     $("btnLockTrack").onclick = () => { this.selectedTrackIds().forEach((id) => (state.tracks[id].lock = !state.tracks[id].lock)); this.renderSeq(); this.syncMixer(); };
     $("btnRegenTrack").onclick = () => this.regenSelected();
     $("btnClearTrack").onclick = () => {
@@ -3050,7 +4616,9 @@ const UI = {
   },
 
   afterSeed() { $("seed").value = state.seed; const kept = regenerateAll(); if (!state.tempoLock && rt.song) state.bpm = rt.song.bpmTarget; this.refreshAll(); toast("Seed " + state.seed + (kept ? " (" + kept + " locked/edited tracks kept)" : "")); },
-  regen() { const kept = regenerateAll(); toast("Regenerated" + (kept ? " (" + kept + " locked/edited tracks kept)" : "")); },
+  regen() {
+    if (state.timeline.mode === "arrange") { Timeline.regenerateClips(tlRt.sel.size ? [...tlRt.sel] : null); return; }
+    const kept = regenerateAll(); toast("Regenerated" + (kept ? " (" + kept + " locked/edited tracks kept)" : "")); },
   regenSelected() {
     this.selectedTrackIds().forEach((id) => {
       if (state.tracks[id].lock) { toast(id + " is locked", true); return; }
@@ -3116,6 +4684,7 @@ const UI = {
     document.body.dataset.theme = t;
     $("seqView").value = t === "retro" ? "tracker" : "grid";
     this.syncSettings(); this.renderSeq(); this.resizeCanvases();
+    Timeline.themeChanged(); Timeline.resize();
   },
   cycleTheme() { const t = THEMES[(THEMES.indexOf(settings.theme) + 1) % THEMES.length]; this.setTheme(t); toast("Theme: " + $("themeSel").selectedOptions[0].textContent); },
   syncSettings() {
@@ -3166,8 +4735,31 @@ const UI = {
       return { track: t.id, d, label, root: t.kind !== "chord" && d % (t.kind === "lead" ? (rt.song ? rt.song.melodic.length : 7) : t.kind === "arp" ? 3 : 7) === 0 };
     });
   },
+  /** The pattern array the sequencer edits: a live track pattern, or a timeline clip's pattern. */
+  patOf(trackId) {
+    if (this.editPattern) {
+      const p = Timeline.lib(this.editPattern);
+      if (p && p.data) return p.kind === "drum" || p.kind === "fill" ? p.data[trackId] || [] : p.data;
+      this.editPattern = null;
+    }
+    return state.patterns[trackId] || [];
+  },
+  patLen() { return this.editPattern ? this.patOf(this.selectedTrackIds()[0]).length : patternLength(); },
+  /** Open a timeline clip's pattern in the sequencer. */
+  editClipPattern(pid) {
+    const p = Timeline.lib(pid); if (!p || !p.data) return;
+    this.editPattern = pid;
+    this.selTrack = { drum: "drums", fill: "drums", bass: "bass", chord: "chords", lead: "lead", arp: "arp" }[p.kind];
+    $("seqView").value = "grid"; this.cursor = { r: 0, c: 0 };
+    this.renderSeq();
+    $("pSeq").scrollIntoView({ behavior: "smooth", block: "start" });
+    toast("Editing the clip pattern. Every clip using it plays your changes.");
+  },
   renderSeq() {
     if (!$("seqGrid")) return;
+    const ep = this.editPattern && Timeline.lib(this.editPattern);
+    $("seqEditBanner").hidden = !ep;
+    if (ep) { $("seqEditText").textContent = "Editing timeline pattern " + ep.id + ": " + TL_KIND_LABELS[ep.kind] + " \u00b7 " + ep.label + (ep.abs ? " (imported MIDI notes are not shown in this grid)" : ""); $("seqView").value = "grid"; }
     TRACKS.filter((t) => t.kind !== "drum").concat([{ id: "drums" }]).forEach((t) => {
       const b = $("tab_" + t.id); if (!b) return;
       const ids = t.id === "drums" ? DRUM_LANES : [t.id];
@@ -3180,7 +4772,7 @@ const UI = {
     const tracker = $("seqView").value === "tracker";
     $("seqGrid").hidden = tracker; $("tracker").hidden = !tracker;
     if (tracker) { this.renderTracker(); return; }
-    const grid = $("seqGrid"), L = patternLength(), spbt = stepsPerBeat();
+    const grid = $("seqGrid"), L = this.patLen(), spbt = stepsPerBeat();
     this.rows = this.seqRows(); this.cells = [];
     const frag = document.createDocumentFragment();
     this.rows.forEach((row, r) => {
@@ -3197,9 +4789,9 @@ const UI = {
     this.paintSeq();
   },
   paintSeq() {
-    const L = patternLength();
+    const L = this.patLen();
     this.rows.forEach((row, r) => {
-      const pat = state.patterns[row.track] || [], cells = this.cells[r]; if (!cells) return;
+      const pat = this.patOf(row.track), cells = this.cells[r]; if (!cells) return;
       const tail = new Array(L).fill(false);
       if (!row.drum) pat.forEach((s, i) => { if (s && s.d === row.d) for (let k = 1; k < s.l && i + k < L; k++) tail[i + k] = true; });
       for (let c = 0; c < L; c++) {
@@ -3214,8 +4806,8 @@ const UI = {
   /** Toggle a step / note (Shift = accent). Marks the track as user-edited. */
   toggleCell(r, c, shift) {
     const row = this.rows[r]; if (!row) return;
-    resizePattern(row.track);
-    const pat = state.patterns[row.track];
+    if (!this.editPattern) resizePattern(row.track);
+    const pat = this.patOf(row.track);
     if (row.drum) {
       if (shift) pat[c] = pat[c] >= 0.95 ? 0.6 : 1; else pat[c] = pat[c] > 0 ? 0 : 0.9;
     } else {
@@ -3233,12 +4825,12 @@ const UI = {
         n.forEach((nt) => INSTRUMENTS[rt.song.instruments[row.track]].trigger(rt.ctx.currentTime + 0.01, nt.midi, 0.7, { dest: rt.channels[row.track].input, dur: 0.2 }));
       }
     }
-    state.tracks[row.track].edited = true;
+    if (this.editPattern) Timeline.dirty = true; else state.tracks[row.track].edited = true;
     this.paintSeq(); this.renderSeqTabsOnly();
   },
   renderSeqTabsOnly() { const b = $("tab_" + (this.selTrack)); if (b) b.classList.add("edited"); },
   gridKey(e) {
-    const L = patternLength(), cur = this.cursor;
+    const L = this.patLen(), cur = this.cursor;
     const moves = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] };
     if (moves[e.key]) { cur.r = clamp(cur.r + moves[e.key][0], 0, this.rows.length - 1); cur.c = mod(cur.c + moves[e.key][1], L); this.paintSeq(); }
     else if (e.key === "Enter" || e.key === " ") this.toggleCell(cur.r, cur.c, e.shiftKey);
@@ -3343,6 +4935,7 @@ const UI = {
       ["mute", "solo", "lock"].forEach((k) => { const b = $(k + "_" + t.id); b.setAttribute("aria-pressed", String(!!s[k])); });
       $("inst_" + t.id).value = s.inst || "auto";
     });
+    Timeline.renderHeaders(); Timeline.dirty = true;
   },
 
   /* ---------- effects rack ---------- */
@@ -3390,6 +4983,7 @@ const UI = {
     const bg = $("bgCanvas"); bg.width = Math.floor(innerWidth * dpr); bg.height = Math.floor(innerHeight * dpr);
     const xy = $("xyPad"); xy.width = xy.clientWidth || 300; xy.height = xy.clientHeight || 150;
     this.drawXY();
+    Timeline.resize();
   },
   /** Runs every animation frame: playhead, displays, meters, visuals. */
   frame() {
@@ -3399,7 +4993,11 @@ const UI = {
       let latest = null;
       while (rt.uiQueue.length && rt.uiQueue[0].time <= ctx.currentTime) latest = rt.uiQueue.shift();
       if (latest) {
-        this.updatePlayhead(latest.step);
+        if (latest.step >= 0 && !this.editPattern) this.updatePlayhead(latest.step);
+        const spb0 = stepsPerBar();
+        if (latest.tl) tlRt.playPos = latest.bar + latest.stepInBar / spb0;
+        else if (tlRt.rec && tlRt.rec.firstSongBar !== null) tlRt.playPos = tlRt.rec.startBar + (latest.bar - tlRt.rec.firstSongBar) + latest.stepInBar / spb0;
+        else tlRt.playPos = null;
         const spbt = stepsPerBeat();
         $("posDisplay").textContent = (latest.bar + 1) + "." + (Math.floor(latest.stepInBar / spbt) + 1) + "." + ((latest.stepInBar % spbt) + 1);
         this.updateTimelinePlayhead(latest.bar, latest.stepInBar);
@@ -3417,6 +5015,7 @@ const UI = {
     if (ctx && this.frameNo % 3 === 0) TRACKS.forEach((t) => { const m = $("meter_" + t.id); if (m) m.style.width = Math.round(Mixer.level(t.id) * 100) + "%"; });
     if (this.frameNo % 30 === 0) Monitor.render();
     this.drawScope();
+    Timeline.frame();
     if (settings.theme === "visual") {
       const skip = settings.visPerf ? 2 : Q().visualFps < 60 ? 2 : 1;
       if (this.frameNo % skip === 0) this.drawVisualShow();
@@ -3527,7 +5126,13 @@ function isTypingTarget(e) {
   return false;
 }
 function onKeyDown(e) {
-  if (e.key === "Escape") { UI.toggleHelp(false); if (rt.pianoOn) UI.setPiano(false); return; }
+  if (e.key === "Escape") { UI.toggleHelp(false); if (!$("clipDialog").hidden) Timeline.closeDialog(); if (rt.pianoOn) UI.setPiano(false); return; }
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !isTypingTarget(e) && $("clipDialog").hidden) {
+    const kk = e.key.toLowerCase();
+    if (kk === "z" && !e.shiftKey) { e.preventDefault(); History.doUndo(); return; }
+    if (kk === "y" || (kk === "z" && e.shiftKey)) { e.preventDefault(); History.doRedo(); return; }
+  }
+  if (!$("clipDialog").hidden) return;
   if (isTypingTarget(e) || e.ctrlKey || e.metaKey || e.altKey) return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (k === "?") { UI.toggleHelp(); e.preventDefault(); return; }
@@ -3562,6 +5167,7 @@ function hideStart() { const o = $("startOverlay"); if (o) o.style.display = "no
 function boot() {
   loadSettings();
   UI.init();
+  Timeline.init();
   document.body.dataset.theme = settings.theme;
   UI.setTheme(settings.theme);
   UI.syncSettings();

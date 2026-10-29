@@ -5,6 +5,7 @@ CLAUDE, THIS IF FOR YOU
 ## demo2 – procedural live music instrument
 `demo2.html`: double-click it, then press **Start the instrument**. Press **?** to see the shortcuts.
 7 mixable genres, 13 style flavors, live keyboard, sequencer, scenes, 3 themes, WAV and MIDI export.
+The **timeline console** (top panel) is a drag-and-drop arrangement view: LIVE mode lets the engine play and can record to the timeline, ARRANGE mode plays the timeline as the song. Clips can be moved, resized, duplicated, split, merged and undone (Ctrl+Z / Ctrl+Y); drag items from the clip library, drop scene buttons on the ruler, drop a .mid file to import it.
 Spec: `demo2-SPEC.md`.
 
 ### demo2 prompt (original, verbatim)
